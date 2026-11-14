@@ -107,7 +107,7 @@ The normal Claude chat can't run programs on your computer, so it can't install 
 |---|---|
 | 1 | Checks that Civil 3D is closed, and looks for Civil 3D 2025 / 2026 |
 | 2 | Copies the plugin to `%APPDATA%\Autodesk\ApplicationPlugins\Civil3DMcp.bundle`, so Civil 3D loads it every time it starts |
-| 3 | Finds Python 3.10+ (even if it isn't on PATH) and creates a private environment in `mcp-server\.venv` with the packages the server needs |
+| 3 | Finds Python 3.10+ (even if it isn't on PATH) and creates a private environment in `mcp-server\.venv` with the packages the server needs. If the project folder is too deep for Windows' 260-character path limit, it uses `%LOCALAPPDATA%\Civil3DMcp\venv` instead |
 | 4 | Adds the `civil3d` server to **Claude Desktop** and **Claude Code**, whichever you have. Your other Claude settings are kept, and the old Claude Desktop config is saved as `claude_desktop_config.json.civil3d-backup` |
 | 5 | Installs the **civil3d skill** for Claude Code, so you can type `/civil3d` |
 

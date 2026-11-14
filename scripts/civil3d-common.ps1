@@ -22,6 +22,17 @@ function Get-SkillDir {
     return (Join-Path $env:USERPROFILE ".claude\skills\$ServerName")
 }
 
+# Deletes one of the installer's own folders, including files whose full path is longer than
+# Windows' 260-character limit (Remove-Item can't delete those, the \\?\ form of the path can).
+function Remove-Folder([string]$Path) {
+    if (-not (Test-Path -LiteralPath $Path)) { return }
+    try { Remove-Item -LiteralPath $Path -Recurse -Force -ErrorAction Stop }
+    catch { try { [System.IO.Directory]::Delete('\\?\' + $Path, $true) } catch { } }
+    if (Test-Path -LiteralPath $Path) {
+        throw "Could not delete $Path. Quit Claude Desktop and Claude Code, then try again."
+    }
+}
+
 function Test-Civil3DRunning {
     return [bool](Get-Process -Name 'acad' -ErrorAction SilentlyContinue)
 }

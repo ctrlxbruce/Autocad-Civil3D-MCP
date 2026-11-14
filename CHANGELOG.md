@@ -39,6 +39,9 @@ First public release.
 - The installer didn't connect current Microsoft Store builds of Claude Desktop, which keep their settings in
   `%LOCALAPPDATA%\Claude-Data\...`. It now writes there and skips folders that Claude Desktop has abandoned
   (marked `.user-data-left`). The uninstaller cleans all of them.
+- Installing from a deeply nested folder failed while creating the Python environment, because some pip files
+  passed Windows' 260-character path limit. The installer now falls back to `%LOCALAPPDATA%\Civil3DMcp\venv`,
+  and the uninstaller removes that folder too.
 
 ### Tested
 

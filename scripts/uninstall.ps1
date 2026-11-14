@@ -75,18 +75,28 @@ try {
 
     # ---------------------------------------------------------------- 4. Python
     Write-Step '4/4  Removing the Python environment'
+    $venvDirs = @($VenvDir)
+    if ($env:LOCALAPPDATA) { $venvDirs += (Join-Path $env:LOCALAPPDATA 'Civil3DMcp\venv') }
     if ($KeepPython) {
         Write-Note 'Kept (-KeepPython).'
-    } elseif (Test-Path -LiteralPath $VenvDir) {
-        try {
-            Remove-Item -LiteralPath $VenvDir -Recurse -Force
-            Write-Ok "Removed $VenvDir"
-        } catch {
-            Write-Bad "Could not remove $VenvDir. Quit Claude Desktop and Claude Code, then delete that folder by hand."
-            $problems.Add('Python environment not removed')
-        }
     } else {
-        Write-Ok 'Nothing to remove'
+        $removedAny = $false
+        foreach ($d in $venvDirs) {
+            if (-not (Test-Path -LiteralPath $d)) { continue }
+            try {
+                Remove-Folder $d
+                Write-Ok "Removed $d"
+                $removedAny = $true
+            } catch {
+                Write-Bad $_.Exception.Message
+                $problems.Add('Python environment not removed')
+            }
+        }
+        if ($env:LOCALAPPDATA) {
+            $own = Join-Path $env:LOCALAPPDATA 'Civil3DMcp'
+            if ((Test-Path -LiteralPath $own) -and -not (Get-ChildItem -LiteralPath $own -Force)) { Remove-Item -LiteralPath $own -Force }
+        }
+        if (-not $removedAny -and $problems.Count -eq 0) { Write-Ok 'Nothing to remove' }
     }
 } catch {
     Write-Host ''

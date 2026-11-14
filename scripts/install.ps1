@@ -89,14 +89,27 @@ try {
 
     # ---------------------------------------------------------------- 3. Python
     Write-Step '3/5  Setting up Python'
-    $venvOk = $false
-    if ((-not $Python) -and (Test-Path -LiteralPath $VenvPy)) {
-        $venvOk = ((Invoke-Quiet $VenvPy @('-c', 'import sys')).Code -eq 0)
+    # The environment normally lives in the project (mcp-server\.venv). If it can't be built there, for example
+    # because the folder path is too long for Windows (260 characters), a short folder in %LOCALAPPDATA% is used.
+    $venvDirs = @($VenvDir)
+    if ($env:LOCALAPPDATA) { $venvDirs += (Join-Path $env:LOCALAPPDATA 'Civil3DMcp\venv') }
+    $pipArgs = @('-m', 'pip', 'install', '--disable-pip-version-check', '--quiet', '-r', $Requirements)
+    $pipError = 'Could not install the Python packages. Check your internet connection, then run the installer again.'
+
+    $VenvPy = $null
+    if (-not $Python) {
+        foreach ($d in $venvDirs) {
+            $candidate = Join-Path $d 'Scripts\python.exe'
+            if ((Test-Path -LiteralPath $candidate) -and ((Invoke-Quiet $candidate @('-c', 'import mcp, anyio')).Code -eq 0)) {
+                $VenvPy = $candidate
+                break
+            }
+        }
     }
-    if ($venvOk) {
-        Write-Ok 'Python environment already exists'
+    if ($VenvPy) {
+        Write-Ok ('Python environment already exists: ' + (Split-Path -Parent (Split-Path -Parent $VenvPy)))
+        Invoke-Checked $VenvPy $pipArgs $pipError
     } else {
-        if (Test-Path -LiteralPath $VenvDir) { Remove-Item -LiteralPath $VenvDir -Recurse -Force }
         $py = Find-Python $Python
         if (-not $py) {
             throw ("Python 3.10 or newer was not found.`n" +
@@ -105,12 +118,25 @@ try {
                    "    Then run this installer again.")
         }
         Write-Ok "Using Python $($py.Version): $($py.Exe)"
-        Invoke-Checked $py.Exe @('-m', 'venv', $VenvDir) 'Could not create the Python environment (mcp-server\.venv).'
+        $lastError = $null
+        foreach ($d in $venvDirs) {
+            try {
+                Remove-Folder $d
+                Invoke-Checked $py.Exe @('-m', 'venv', $d) "Could not create a Python environment in $d."
+                $candidate = Join-Path $d 'Scripts\python.exe'
+                Write-Host '    Installing Python packages (the first time can take a minute)...'
+                Invoke-Checked $candidate $pipArgs $pipError
+                Invoke-Checked $candidate @('-c', 'import mcp, anyio') 'The Python packages were installed but cannot be loaded.'
+                $VenvPy = $candidate
+                break
+            } catch {
+                $lastError = $_.Exception.Message
+                try { Remove-Folder $d } catch { }
+                if ($d -ne $venvDirs[-1]) { Write-Note "$lastError Trying a shorter folder: $($venvDirs[-1])" }
+            }
+        }
+        if (-not $VenvPy) { throw $lastError }
     }
-    Write-Host '    Installing Python packages (the first time can take a minute)...'
-    Invoke-Checked $VenvPy @('-m', 'pip', 'install', '--disable-pip-version-check', '--quiet', '-r', $Requirements) `
-        'Could not install the Python packages. Check your internet connection, then run the installer again.'
-    Invoke-Checked $VenvPy @('-c', 'import mcp, anyio') 'The Python packages were installed but cannot be loaded.'
     Write-Ok "Python ready: $VenvPy"
 
     # ---------------------------------------------------------------- 4. Claude
