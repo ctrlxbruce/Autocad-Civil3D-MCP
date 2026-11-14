@@ -32,6 +32,10 @@ The user watches Civil 3D next to this chat, so every change shows up in their d
 - Coordinates are drawing units; points are `[x, y]` or `[x, y, z]`. Angles are degrees in the dedicated
   tools but radians in `props_set` / `props_call`.
 - Refer to Civil objects by name (surface "EG", alignment "CL-1") or by the handle a create tool returned.
+- Pipe networks: create the network with a reference `surface` so rims follow the ground, use a parts list with
+  sizes (drawings from the `_Autodesk Civil 3D (Metric) NCS.dwt` template have "Storm Sewer" and "Sanitary Sewer"),
+  and give each pipe a `start_invert` plus a negative `slope` for a falling sewer (-0.01 = 1 %). Check `warnings`
+  in the reply.
 - Before deleting or changing many objects, say what will change and wait for a yes.
 - After drawing something, call `doc_zoom_extents` so the user can see it.
 - Report briefly: what was created or changed, names or handles, and key numbers (lengths, areas, volumes).
@@ -40,6 +44,8 @@ The user watches Civil 3D next to this chat, so every change shows up in their d
 
 - **"did not answer in time"**: a dialog box is probably open in Civil 3D. Ask the user to close it.
 - **Pipe or structure errors about the catalog**: ask the user to set it on the Civil 3D ribbon:
-  Manage tab -> Set Pipe Network Catalog.
+  Home tab -> Create Design -> Pipe Network (drop-down) -> Set Pipe Network Catalog (command `AECCSETNETWORKCATALOG`; `doc_run_command` with `_.AECCSETNETWORKCATALOG ` opens the dialog).
+  Catalog folder for Civil 3D 2025: `C:\ProgramData\Autodesk\C3D 2025\enu\Pipes Catalog`; pick Metric Pipes and
+  Metric Structures for metric drawings.
 - Otherwise read the error, fix the inputs and try once more. If it still fails, explain the problem plainly
   and suggest what the user can do in Civil 3D.

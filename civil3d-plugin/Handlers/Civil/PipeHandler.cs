@@ -11,7 +11,8 @@ namespace Civil3DMcp.Handlers
     public static class PipeHandler
     {
         const string CatalogHint = " — If Civil 3D's command line says it cannot find the catalog registry information, the pipe "
-            + "network catalog is not set on this PC: in Civil 3D go to Manage tab > Set Pipe Network Catalog, pick the Metric/Imperial catalog, then try again.";
+            + "network catalog is not set for this drawing: in Civil 3D go to Home tab > Create Design > Pipe Network (drop-down) > "
+            + "Set Pipe Network Catalog (command AECCSETNETWORKCATALOG), pick the Metric or Imperial catalog, then try again.";
 
         static IEnumerable<ObjectId> Families(object partsList) =>
             new[] { "Pipe", "Structure" }.SelectMany(d =>
@@ -92,10 +93,21 @@ namespace Civil3DMcp.Handlers
             catch (Exception ex) { throw new InvalidOperationException(ex.Message + CatalogHint); }
             var sid = (ObjectId)r[4];
             var st = c.Open(sid, true);
-            if (a.Has("rim")) try { Reflect.Set(st, "RimElevation", a.Dbl("rim")); } catch { }
-            if (a.Has("sump")) try { Reflect.Set(st, "SumpDepth", a.Dbl("sump")); } catch { }
-            if (a.Has("name")) try { Reflect.Set(st, "Name", a.Str("name")); } catch { }
-            return new { handle = Ctx.H(sid) };
+            var warnings = new List<string>();
+            if (a.Has("rim")) Try(warnings, "rim", () => Reflect.Set(st, "RimElevation", a.Dbl("rim")));
+            if (a.Has("sump")) Try(warnings, "sump", () => Reflect.Set(st, "SumpDepth", a.Dbl("sump")));
+            if (a.Has("name")) Try(warnings, "name", () => Reflect.Set(st, "Name", a.Str("name")));
+            var res = Props.Pick(st, "Name", "RimElevation", "SumpElevation", "SumpDepth");
+            res["handle"] = Ctx.H(sid);
+            if (warnings.Count > 0) res["warnings"] = warnings;
+            return res;
+        }
+
+        // Runs one optional setting; a failure becomes a warning in the reply instead of being hidden.
+        static void Try(List<string> warnings, string what, Action act)
+        {
+            try { act(); }
+            catch (Exception ex) { warnings.Add($"{what} was not set: {(ex.InnerException ?? ex).Message}"); }
         }
 
         [Tool("pipes.add_pipe")]
@@ -109,13 +121,41 @@ namespace Civil3DMcp.Handlers
             catch (Exception ex) { throw new InvalidOperationException(ex.Message + CatalogHint); }
             var pid = (ObjectId)r[3];
             var pipe = c.Open(pid, true);
+            // An invert is the inside bottom of the pipe, but Civil 3D stores the centreline: add half the inner height.
+            double half = HalfInnerHeight(pipe);
+            var warnings = new List<string>();
+            if (a.Has("start_invert")) Try(warnings, "start_invert", () =>
+                Reflect.Set(pipe, "StartPoint", new Point3d(seg.StartPoint.X, seg.StartPoint.Y, a.Dbl("start_invert") + half)));
+            if (a.Has("end_invert")) Try(warnings, "end_invert", () =>
+                Reflect.Set(pipe, "EndPoint", new Point3d(seg.EndPoint.X, seg.EndPoint.Y, a.Dbl("end_invert") + half)));
+            if (a.Has("slope")) Try(warnings, "slope", () => Reflect.Call(pipe, "SetSlopeHoldStart", a.Dbl("slope")));
+            if (a.Has("name")) Try(warnings, "name", () => Reflect.Set(pipe, "Name", a.Str("name")));
+
+            // Connect only after the elevations are final: a structure sets its sump from the pipe inverts at the
+            // moment the pipe is connected, and does not follow later elevation changes.
             if (a.Has("start_structure")) Reflect.Call(pipe, "ConnectToStructure", "Start", c.Find(a.Str("start_structure")), true);
             if (a.Has("end_structure")) Reflect.Call(pipe, "ConnectToStructure", "End", c.Find(a.Str("end_structure")), true);
-            if (a.Has("start_invert")) try { Reflect.Set(pipe, "StartPoint", new Point3d(seg.StartPoint.X, seg.StartPoint.Y, a.Dbl("start_invert"))); } catch { }
-            if (a.Has("end_invert")) try { Reflect.Set(pipe, "EndPoint", new Point3d(seg.EndPoint.X, seg.EndPoint.Y, a.Dbl("end_invert"))); } catch { }
-            if (a.Has("slope")) try { Reflect.Call(pipe, "SetSlopeHoldStart", a.Dbl("slope")); } catch { }
-            if (a.Has("name")) try { Reflect.Set(pipe, "Name", a.Str("name")); } catch { }
-            return Props.Pick(pipe, "Name", "Handle", "Length2D", "Slope", "StartPoint", "EndPoint");
+
+            var res = Props.Pick(pipe, "Name", "Handle", "Length2D", "Slope", "StartPoint", "EndPoint");
+            var sp = (Point3d)Reflect.Get(pipe, "StartPoint");
+            var ep = (Point3d)Reflect.Get(pipe, "EndPoint");
+            res["start_invert"] = Math.Round(sp.Z - half, 4);
+            res["end_invert"] = Math.Round(ep.Z - half, 4);
+            res["falls_from_start_to_end"] = ep.Z < sp.Z;
+            if (!a.Has("start_invert") && !a.Has("end_invert") && Math.Abs(sp.Z) < 1e-6 && Math.Abs(ep.Z) < 1e-6)
+                warnings.Add("The pipe is at elevation 0 because no start_invert was given and no rule set its elevation. "
+                    + "Pass start_invert (inside bottom of the pipe) and a slope (negative = falls from start to end).");
+            if (warnings.Count > 0) res["warnings"] = warnings;
+            return res;
+        }
+
+        static double HalfInnerHeight(object pipe)
+        {
+            foreach (var prop in new[] { "InnerHeight", "InnerDiameterOrWidth" })
+            {
+                try { var v = Convert.ToDouble(Reflect.Get(pipe, prop)); if (v > 0) return v / 2; } catch { }
+            }
+            return 0;
         }
 
         [Tool("pipes.connect")]
@@ -154,7 +194,7 @@ namespace Civil3DMcp.Handlers
         [Tool("pipes.interference_check")]
         public static object Interference(Args a, Ctx c)
         {
-            c.Doc.SendStringToExecute("_CreateInterferenceCheck ", true, false, true);
+            c.Doc.SendStringToExecute("_AeccCreateInterferenceCheck ", true, false, true);
             return new { note = "Interference Check command started in Civil 3D. Pick the networks in the dialog." };
         }
 

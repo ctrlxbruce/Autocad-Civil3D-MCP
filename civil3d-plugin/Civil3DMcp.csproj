@@ -19,6 +19,17 @@
     <AcadDir Condition="'$(AcadDir)' == ''">C:\Program Files\Autodesk\AutoCAD 2025</AcadDir>
   </PropertyGroup>
 
+  <!--
+    Release builds are shipped in release/. Keep the builder's local folder names (which can contain
+    personal information) out of the DLL: no debug-file path, and source paths mapped to a neutral root.
+  -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <Deterministic>true</Deterministic>
+    <PathMap>$(MSBuildProjectDirectory)=/civil3d-plugin</PathMap>
+  </PropertyGroup>
+
   <ItemGroup>
     <Reference Include="accoremgd"><HintPath>$(AcadDir)\accoremgd.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="acdbmgd"><HintPath>$(AcadDir)\acdbmgd.dll</HintPath><Private>false</Private></Reference>

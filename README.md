@@ -1,6 +1,7 @@
 # Civil 3D MCP: control Autodesk Civil 3D with AI
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Version 1.0.0](https://img.shields.io/badge/version-1.0.0-blue)](CHANGELOG.md)
 ![Civil 3D 2025 | 2026](https://img.shields.io/badge/Civil%203D-2025%20%7C%202026-0696D7)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6)
 ![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB)
@@ -36,6 +37,7 @@ library of tested templates.
 - [Known limitations](#known-limitations)
 - [For developers](#for-developers)
 - [License](#license)
+- [Changelog](CHANGELOG.md)
 
 ---
 
@@ -209,7 +211,7 @@ Set the mode with `CIVIL3D_MCP_MODE` in the config from Step 3.
 | `MCPSTATUS` is an unknown command | The plugin isn't loaded. Close Civil 3D and run `install.bat` again. To load it once by hand, type `NETLOAD` and pick `%APPDATA%\Autodesk\ApplicationPlugins\Civil3DMcp.bundle\Contents\Civil3DMcp.dll`. |
 | The civil3d tools don't appear in Claude | Run `install.bat` again and read its summary. Then fully quit and reopen Claude Desktop, or start a new Claude Code session (`claude mcp list` should show `civil3d`). |
 | **"Civil 3D did not answer in time"** | A dialog box is probably open in Civil 3D. Close it and try again. |
-| Can't add pipes or structures | Set the pipe catalog first: **Manage tab → Set Pipe Network Catalog**. |
+| Can't add pipes or structures | Set the pipe catalog for the drawing: **Home tab → Create Design → Pipe Network ▾ → Set Pipe Network Catalog** (or type `AECCSETNETWORKCATALOG`; for pressure networks `AECCSETPRESSURENETWORKCATALOG`). Folder for Civil 3D 2025: `C:\ProgramData\Autodesk\C3D 2025\enu\Pipes Catalog`; choose **Metric Pipes** and **Metric Structures** for metric drawings. If the parts list still has no sizes, start the drawing from `_Autodesk Civil 3D (Metric) NCS.dwt`. |
 | Something else | Open an [issue](https://github.com/ctrlxbruce/Autocad-Civil3D-MCP/issues) with the error message and your Civil 3D version. |
 
 **Civil 3D commands added by the plugin**
@@ -293,13 +295,24 @@ skills/
 ## Known limitations
 
 - **Civil 3D 2024 and older** are not supported yet (they use .NET Framework 4.8; see [For developers](#for-developers)).
-- **Adding pipes and structures** needs Civil 3D's pipe catalog to be set (*Manage tab → Set Pipe Network Catalog*).
+- **Adding pipes and structures** needs the pipe catalog to be set
+  (*Home tab → Create Design → Pipe Network ▾ → Set Pipe Network Catalog*; see [Troubleshooting](#troubleshooting))
+  and a parts list that has sizes. Drawings started from `_Autodesk Civil 3D (Metric) NCS.dwt` come with ready
+  "Storm Sewer" and "Sanitary Sewer" parts lists. Adding sizes to an empty parts list through the Civil 3D 2025 API
+  does not work, so start pipe work from that template (or one of your own with filled parts lists).
 - **Not built in as tools yet:** survey database, creating pressure networks, adding subassemblies to assemblies,
   superelevation, QTO reports, LandXML import/export, and creating parcels from objects.
   Claude can still try these through code execution or Civil 3D commands.
 
-**Test status:** the plugin was tested live in Civil 3D 2025 (Metric) with the built-in self-test.
-158 of 160 checks passed; the other 2 were deliberate error tests that behaved correctly.
+**Test status (Civil 3D 2025, Metric):** the plugin was built from source and tested live in a blank drawing with
+143 tool calls covering every group: drafting, modify, annotation, all 9 dimension types, blocks, layouts and PDF
+plotting, COGO points and CSV import, surfaces (breaklines, boundaries, contours, elevation and slope analysis,
+cut/fill volume), alignments, profiles, corridors, sample lines and section views, styles, and code execution.
+All 143 succeeded, and the code safety filter blocked a file-delete script as intended. Gravity pipe networks were
+tested in a drawing from the Metric NCS template: a network with a reference surface, manholes with rims from the
+surface, PVC pipes with inverts and falling slopes, connections, design rules and the network report. The one-step
+installer was tested on a real PC with Claude Desktop and Claude Code.
+Not yet tested: pressure networks, xrefs and DWG import, and Civil 3D 2026.
 
 ---
 
@@ -408,7 +421,8 @@ DatabaseServices, Geometry, EditorInput, Colors), `Autodesk.Civil`, `Autodesk.Ci
 ```
 civil3d-mcp/
 ├── install.bat · uninstall.bat      one-step installer / uninstaller (Windows)
-├── README.md · CLAUDE.md · LICENSE · build_and_install.bat · claude_desktop_config.example.json
+├── README.md · CHANGELOG.md · CLAUDE.md · LICENSE · build_and_install.bat · claude_desktop_config.example.json
+├── .github/ISSUE_TEMPLATE/          bug report and feature request forms
 ├── scripts/                         install.ps1 · uninstall.ps1 · civil3d-common.ps1
 ├── claude-skill/civil3d/SKILL.md    the /civil3d skill for Claude Code
 ├── docs/tool-reference.md

@@ -3,6 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.Geometry;
+using AcColor = Autodesk.AutoCAD.Colors.Color;
+using CivilSurface = Autodesk.Civil.DatabaseServices.Surface;
+using ElevationBand = Autodesk.Civil.DatabaseServices.SurfaceAnalysisElevationData;
+using SlopeBand = Autodesk.Civil.DatabaseServices.SurfaceAnalysisSlopeData;
 
 namespace Civil3DMcp.Handlers
 {
@@ -253,27 +257,86 @@ namespace Civil3DMcp.Handlers
         }
 
         /// <summary>Elevation / slope analysis ranges on a surface (banding).</summary>
+        /// <summary>
+        /// Elevation / slope analysis: splits the surface's range into equal bands, saves them on the surface
+        /// (shown when the surface style displays Elevations / Slopes) and returns them.
+        /// The Civil 3D .NET API has no "calculate regions" call, so the bands are built here.
+        /// watershed: returns the surface's existing watershed data.
+        /// </summary>
         [Tool("surface.analysis")]
         public static object Analysis(Args a, Ctx c)
         {
-            var s = c.Open(a.NeedStr("surface"), true);
-            var an = Reflect.Get(s, "Analysis");
-            var kind = a.Str("kind", "elevation").ToLowerInvariant();
+            var kind = a.Str("kind", "elevation").Trim().ToLowerInvariant().TrimEnd('s');
+            if (kind != "elevation" && kind != "slope" && kind != "watershed")
+                throw new ArgumentException($"Unknown kind '{a.Str("kind")}'. Use elevation, slope or watershed.");
             int n = a.Int("ranges", 8);
-            object data = kind switch
+            if (n < 1 || n > 64) throw new ArgumentException("ranges must be between 1 and 64.");
+
+            var s = c.Open(a.NeedStr("surface"), true) as CivilSurface
+                ?? throw new ArgumentException($"'{a.Str("surface")}' is not a surface.");
+            var an = s.Analysis;
+
+            if (kind == "watershed") return Conv.Plain(an.GetWatershedData());
+
+            if (kind == "elevation")
             {
-                "slope" => Reflect.Call(an, "GetSlopeData"),
-                "watershed" => Reflect.Call(an, "GetWatershedData"),
-                _ => Reflect.Call(an, "GetElevationData"),
+                var gp = s.GetGeneralProperties();
+                var bands = Bands(gp.MinimumElevation, gp.MaximumElevation, n);
+                an.SetElevationData(bands.Select((b, i) => new ElevationBand(b.lo, b.hi, Ramp(i, bands.Count))).ToArray());
+                return new
+                {
+                    kind,
+                    surface = s.Name,
+                    ranges = an.GetElevationData()
+                        .Select(d => new { min = d.MinimumElevation, max = d.MaximumElevation, color = d.Scheme.ColorNameForDisplay })
+                        .ToList(),
+                    note = "Shown in the drawing when the surface style displays Elevations.",
+                };
+            }
+
+            // Slope: grades are fractions (0.05 = 5 %), like the surface's terrain properties.
+            var tp = Reflect.Call(s, "GetTerrainProperties");
+            double smin = Convert.ToDouble(Reflect.Get(tp, "MinimumGradeOrSlope"));
+            double smax = Convert.ToDouble(Reflect.Get(tp, "MaximumGradeOrSlope"));
+            var slopeBands = Bands(smin, smax, n);
+            an.SetSlopeData(slopeBands.Select((b, i) => new SlopeBand(b.lo, b.hi, Ramp(i, slopeBands.Count))).ToArray());
+            return new
+            {
+                kind,
+                surface = s.Name,
+                ranges = an.GetSlopeData()
+                    .Select(d => new
+                    {
+                        min = d.MinimumSlope,
+                        max = d.MaximumSlope,
+                        min_percent = Math.Round(d.MinimumSlope * 100, 2),
+                        max_percent = Math.Round(d.MaximumSlope * 100, 2),
+                        color = d.Scheme.ColorNameForDisplay,
+                    })
+                    .ToList(),
+                note = "Slopes are fractions (0.05 = 5 %). Shown in the drawing when the surface style displays Slopes.",
             };
-            if (kind == "elevation") try { Reflect.Call(an, "CalculateElevationRegions", n, "EqualInterval", true); } catch { }
-            if (kind == "slope") try { Reflect.Call(an, "CalculateSlopeRegions", n, "EqualInterval", true); } catch { }
-            return Conv.Plain(kind switch
-            {
-                "slope" => Reflect.Call(an, "GetSlopeData"),
-                "watershed" => Reflect.Call(an, "GetWatershedData"),
-                _ => Reflect.Call(an, "GetElevationData"),
-            });
+        }
+
+        static List<(double lo, double hi)> Bands(double lo, double hi, int n)
+        {
+            if (double.IsNaN(lo) || double.IsNaN(hi) || hi < lo)
+                throw new InvalidOperationException("The surface has no valid range yet. Add points, contours or breaklines first.");
+            if (hi == lo) n = 1;
+            double step = (hi - lo) / n;
+            var list = new List<(double lo, double hi)>();
+            for (int i = 0; i < n; i++) list.Add((lo + i * step, i == n - 1 ? hi : lo + (i + 1) * step));
+            return list;
+        }
+
+        // Colour ramp from blue (low) through green to red (high).
+        static AcColor Ramp(int i, int n)
+        {
+            double t = n <= 1 ? 0 : (double)i / (n - 1);
+            byte r = (byte)Math.Round(255 * t);
+            byte g = (byte)Math.Round(255 * (1 - Math.Abs(2 * t - 1)));
+            byte b = (byte)Math.Round(255 * (1 - t));
+            return AcColor.FromRgb(r, g, b);
         }
     }
 }

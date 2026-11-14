@@ -5,7 +5,8 @@ TOOLS = {
     "doc.run_command": (
         "FALLBACK for anything without a dedicated tool: send text to the Civil 3D command line exactly as typed. "
         "Use '-' command versions to avoid dialogs (e.g. '-LAYER', '-PLOT'). Separate inputs with spaces or \\n. "
-        "Examples: 'FILLET R 2 ', '_TRIM', 'REVCLOUD', '_LandXMLIn', 'CreateSurfaceFromCorridor'.",
+        "Civil 3D command names usually start with Aecc (e.g. '_AeccLandXMLIn', '_AeccSetNetworkCatalog'). "
+        "Examples: 'FILLET R 2 ', '_TRIM', 'REVCLOUD', '_AeccLandXMLIn'.",
         {"command": ("string", "Command text", True)}),
     "doc.get_sysvar": ("Read a system variable (e.g. DIMSCALE, LTSCALE, PDMODE).", {"name": ("string", "Variable name", True)}),
     "doc.set_sysvar": ("Set a system variable.", {"name": ("string", "Variable name", True), "value": ("string", "New value", True)}),

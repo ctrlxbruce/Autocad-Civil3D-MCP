@@ -38,8 +38,11 @@ TOOLS = {
                                 "minor_interval": ("number", ""), "base_elevation": ("number", ""), "smooth": ("boolean", "Smooth contours"),
                                 "smoothing_type": ("string", "AddVertices | SplineCurve"), "smoothing_amount": ("integer", "1-10"),
                                 "depression_ticks": ("boolean", ""), "show": ("object", "{\"Triangles\":false,\"MajorContour\":true}")}),
-    "surface.analysis": ("Run elevation/slope analysis (ranges) and return the bands.",
-                         {**_S, "kind": ("string", "elevation | slope | watershed"), "ranges": ("integer", "Number of ranges")}),
+    "surface.analysis": ("Elevation or slope analysis: split the surface's range into equal bands, save them on the surface "
+                         "(visible when its style shows Elevations / Slopes) and return them. Slopes are fractions (0.05 = 5 %). "
+                         "watershed returns the existing watershed data.",
+                         {**_S, "kind": ("string", "elevation (default) | slope | watershed"),
+                          "ranges": ("integer", "Number of equal bands, 1-64 (default 8)")}),
     "surface.volume": ("Cut/fill between two surfaces (creates a TIN volume surface) or read an existing one.",
                        {"base": ("string", "Base (existing) surface"), "comparison": ("string", "Comparison (design) surface"),
                         "name": ("string", "Volume surface name"), "volume_surface": ("string", "Use existing volume surface"),

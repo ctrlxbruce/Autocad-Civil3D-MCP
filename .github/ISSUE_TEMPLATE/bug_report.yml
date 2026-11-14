@@ -1,0 +1,56 @@
+name: Bug report
+description: Something doesn't work with Civil 3D MCP
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Please don't paste private project data (client names, drawings or coordinates you can't share).
+  - type: dropdown
+    id: civil3d
+    attributes:
+      label: Civil 3D version
+      options:
+        - Civil 3D 2025
+        - Civil 3D 2026
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: client
+    attributes:
+      label: Where do you use Claude?
+      options:
+        - Claude Desktop (chat)
+        - Claude Desktop (Code tab)
+        - Claude Code (terminal)
+        - Another MCP client
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you asked Claude, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: error
+    attributes:
+      label: Error message
+      description: The error Claude showed, or the last lines of the installer or the Civil 3D command line.
+      render: text
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Start a drawing from ...
+        2. Ask Claude: "..."
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I ran install.bat again and fully restarted Claude.
+        - label: Civil 3D shows "[Civil3D MCP] Ready" and MCPSTATUS says RUNNING.

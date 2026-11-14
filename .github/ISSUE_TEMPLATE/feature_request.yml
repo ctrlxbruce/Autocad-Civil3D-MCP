@@ -1,0 +1,28 @@
+name: Feature request
+description: A tool or workflow you'd like Claude to handle in Civil 3D
+labels: [enhancement]
+body:
+  - type: textarea
+    id: task
+    attributes:
+      label: What do you want to do?
+      description: The Civil 3D task in your own words, for example "label every manhole with rim and invert levels".
+    validations:
+      required: true
+  - type: textarea
+    id: today
+    attributes:
+      label: How do you do it today?
+      description: The Civil 3D commands or steps you use now, if any.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Drafting / annotation
+        - Points / surfaces
+        - Alignments / profiles / corridors
+        - Pipe or pressure networks
+        - Sheets / plotting
+        - Installation / setup
+        - Other

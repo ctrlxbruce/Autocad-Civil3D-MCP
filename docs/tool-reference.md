@@ -167,7 +167,7 @@ Mode column: **C** = loaded in `code` mode, **L** = loaded in `lean` mode, all t
 | `surface_elevation_at` |  | Surface elevation at point(s). | **surface**, point, points |
 | `surface_extract_contours` |  | Extract contours/border to AutoCAD polylines | **surface**, what, interval, smoothing, smoothness, layer |
 | `surface_style_contours` |  | Set contour settings on a SURFACE STYLE: intervals, base elevation, CONTOUR SMOOTHING, and show/hide components (MajorContour, MinorContour, Triangles, Points, Boundary, Elevations, Slopes, SlopeArrows, Watersheds, UserContours, Gridded). | **style**, major_interval, minor_interval, base_elevation, smooth, smoothing_type, smoothing_amount, depression_ticks, show |
-| `surface_analysis` |  | Run elevation/slope analysis (ranges) and return the bands. | **surface**, kind, ranges |
+| `surface_analysis` |  | Elevation or slope analysis: split the surface's range into equal bands, save them on the surface (visible when its style shows Elevations / Slopes) and return them. Slopes are fractions (0.05 = 5 %). watershed returns the existing watershed data. | **surface**, kind, ranges |
 | `surface_volume` |  | Cut/fill between two surfaces (creates a TIN volume surface) or read an existing one. | base, comparison, name, volume_surface, cut_factor, fill_factor |
 
 ## Alignments & profiles
@@ -212,12 +212,12 @@ Mode column: **C** = loaded in `code` mode, **L** = loaded in `lean` mode, all t
 |---|---|---|---|
 | `pipes_parts_lists` |  | Parts lists with families and sizes (needed for add_pipe/add_structure). |  |
 | `pipes_network_create` |  | Create a gravity pipe network. | name, parts_list, surface, alignment, layer |
-| `pipes_add_structure` |  | Add a structure (manhole, inlet ...). | **network**, **family**, size, **location**, rotation, rim, sump, name, apply_rules |
-| `pipes_add_pipe` |  | Add a pipe, optionally connected to structures. | **network**, **family**, size, **start**, **end**, start_structure, end_structure, start_invert, end_invert, slope, name, apply_rules |
+| `pipes_add_structure` |  | Add a structure (manhole, inlet ...). The rim follows the network's reference surface; `sump` is a depth below the lowest pipe invert. Returns rim/sump elevations and warnings. | **network**, **family**, size, **location**, rotation, rim, sump, name, apply_rules |
+| `pipes_add_pipe` |  | Add a pipe, optionally connected to structures. Give `start_invert` (inside bottom of the pipe) and `slope`; a negative slope falls from start to end (sewer: -0.01 = 1 % fall). Returns start/end inverts and warnings. | **network**, **family**, size, **start**, **end**, start_structure, end_structure, start_invert, end_invert, slope, name, apply_rules |
 | `pipes_connect` |  | Connect a pipe end to a structure. | **pipe**, **structure**, end |
 | `pipes_network_info` |  | All pipes and structures of a network. | **network** |
 | `pipes_apply_rules` |  | Apply design rules to pipes/structures. | **parts** |
-| `pipes_interference_check` |  | Start Civil 3D interference check. |  |
+| `pipes_interference_check` |  | Start Civil 3D's interference check (opens a dialog where the user picks the networks). |  |
 | `pressure_network_info` |  | Inspect a pressure pipe network (pipes, fittings, appurtenances). | **network** |
 
 ## Civil objects & styles

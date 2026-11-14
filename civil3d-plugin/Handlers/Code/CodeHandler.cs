@@ -60,11 +60,20 @@ using Surface = Autodesk.Civil.DatabaseServices.Surface;
 using Application = Autodesk.AutoCAD.ApplicationServices.Application;
 ";
 
+        static int _refsAssemblyCount;
+
         static List<MetadataReference> Refs()
         {
-            if (_refs != null) return _refs;
-            _refs = AppDomain.CurrentDomain.GetAssemblies()
+            // Civil 3D objects (Pipe, Structure, ...) derive from AEC base classes in AecBaseMgd, which Civil 3D
+            // loads lazily. Walking the base types loads those assemblies before references are collected.
+            for (var t = typeof(Autodesk.Civil.DatabaseServices.Entity); t != null; t = t.BaseType) { _ = t.Assembly; }
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies()
                 .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
+                .ToList();
+            // Rebuild when Civil 3D has loaded more assemblies since the last script.
+            if (_refs != null && assemblies.Count == _refsAssemblyCount) return _refs;
+            _refsAssemblyCount = assemblies.Count;
+            _refs = assemblies
                 .GroupBy(a => a.GetName().Name).Select(g => g.First())
                 .Select(a => { try { return (MetadataReference)MetadataReference.CreateFromFile(a.Location); } catch { return null; } })
                 .Where(r => r != null).ToList();
