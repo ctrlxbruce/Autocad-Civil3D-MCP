@@ -36,10 +36,14 @@ First public release.
   `CreateSurfaceFromCorridor`) and the wrong ribbon tab for the pipe catalog. Corrected to `AeccSetNetworkCatalog`,
   `AeccLandXMLIn` and Home tab → Create Design → Pipe Network → Set Pipe Network Catalog.
 - Release builds no longer embed the builder's local folder path in the DLL.
+- The installer didn't connect current Microsoft Store builds of Claude Desktop, which keep their settings in
+  `%LOCALAPPDATA%\Claude-Data\...`. It now writes there and skips folders that Claude Desktop has abandoned
+  (marked `.user-data-left`). The uninstaller cleans all of them.
 
 ### Tested
 
 Civil 3D 2025 (Metric): 143 live tool calls across every group, gravity pipe networks in a drawing from the
-Metric NCS template, the installer and uninstaller (sandbox and real PC), and Claude Code side by side.
+Metric NCS template, the installer and uninstaller (sandbox and real PC), and Claude side by side with Civil 3D in
+both the Claude Desktop chat and Claude Code.
 Not yet tested: Civil 3D 2026, pressure networks, xrefs and DWG import. See the README's
 [Known limitations](README.md#known-limitations).

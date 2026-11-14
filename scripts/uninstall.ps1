@@ -44,7 +44,7 @@ try {
 
     # ---------------------------------------------------------------- 2. Claude
     Write-Step '2/4  Disconnecting Claude'
-    foreach ($d in (Get-ClaudeDesktopConfigDirs)) {
+    foreach ($d in (Get-ClaudeDesktopConfigDirs -IncludeAbandoned)) {
         $cfgPath = Join-Path $d 'claude_desktop_config.json'
         try {
             if (Remove-ClaudeDesktopServer $cfgPath) { Write-Ok "Claude Desktop: removed from $cfgPath" }

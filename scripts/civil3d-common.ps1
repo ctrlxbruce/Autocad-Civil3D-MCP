@@ -89,10 +89,20 @@ function Find-Python([string]$Preferred) {
 }
 
 # Every folder Claude Desktop may read claude_desktop_config.json from:
-# the Microsoft Store (MSIX) package folder and the classic %APPDATA%\Claude folder.
-function Get-ClaudeDesktopConfigDirs {
+#   - %LOCALAPPDATA%\Claude-Data\<package>   (current Microsoft Store builds)
+#   - the MSIX package's LocalCache\Roaming\Claude folder (older Store builds)
+#   - %APPDATA%\Claude                        (classic installer)
+# A folder holding a ".user-data-left*" marker was abandoned by Claude Desktop (its data moved elsewhere),
+# so it is skipped unless -IncludeAbandoned is given (the uninstaller uses that to clean up old entries).
+function Get-ClaudeDesktopConfigDirs([switch]$IncludeAbandoned) {
     $dirs = New-Object System.Collections.Generic.List[string]
     if ($env:LOCALAPPDATA) {
+        $claudeData = Join-Path $env:LOCALAPPDATA 'Claude-Data'
+        if (Test-Path -LiteralPath $claudeData) {
+            foreach ($d in (Get-ChildItem -LiteralPath $claudeData -Directory -ErrorAction SilentlyContinue)) {
+                if ($d.Name -like '*claude*') { $dirs.Add($d.FullName) }
+            }
+        }
         $packages = Join-Path $env:LOCALAPPDATA 'Packages'
         if (Test-Path -LiteralPath $packages) {
             foreach ($p in (Get-ChildItem -LiteralPath $packages -Directory -ErrorAction SilentlyContinue)) {
@@ -107,7 +117,10 @@ function Get-ClaudeDesktopConfigDirs {
         $classic = Join-Path $env:APPDATA 'Claude'
         if (Test-Path -LiteralPath $classic) { $dirs.Add($classic) }
     }
-    return , $dirs.ToArray()
+    $result = @($dirs | Where-Object {
+        $IncludeAbandoned -or -not (Get-ChildItem -LiteralPath $_ -Force -Filter '.user-data-left*' -ErrorAction SilentlyContinue)
+    } | Select-Object -Unique)
+    return , [string[]]$result
 }
 
 function Get-ClaudeCli {
