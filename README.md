@@ -143,7 +143,7 @@ DatabaseServices, Geometry, EditorInput, Colors), `Autodesk.Civil`, `Autodesk.Ci
 
 ### 1. Get the code
 ```bat
-git clone https://github.com/YOUR-NAME/civil3d-mcp.git C:\civil3d-mcp
+git clone https://github.com/ctrlxbruce/Autocad-Civil3D-MCP.git C:\civil3d-mcp
 ```
 
 ### 2. Check the Civil 3D path
