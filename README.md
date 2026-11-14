@@ -15,13 +15,17 @@ It ships with **157 ready-made tools** for drafting, COGO points, surfaces, alig
 PDF plotting. For anything those tools don't cover, Claude can write and run C# code inside Civil 3D, starting from a
 library of tested templates.
 
+**Install in one message.** In Claude Code (or the **Code** tab of the Claude desktop app), send
+`Install this repo: https://github.com/ctrlxbruce/Autocad-Civil3D-MCP`. Then open Civil 3D and tell Claude
+*"Use Civil 3D"*. [Other ways to install](#installation).
+
 ---
 
 ## Contents
 
 - [What you can do](#what-you-can-do)
 - [Requirements](#requirements)
-- [Installation](#installation-about-10-minutes)
+- [Installation](#installation)
 - [First use](#first-use)
 - [Example prompts](#example-prompts)
 - [Modes: control token use](#modes-control-token-use)
@@ -57,51 +61,63 @@ library of tested templates.
 |---|---|
 | **Windows 10 or 11** (64-bit) | |
 | **Autodesk Civil 3D 2025 or 2026** | Full Civil 3D. Plain AutoCAD is not supported. Tested on Civil 3D 2025; 2026 is supported but not yet tested. |
-| **Python 3.10 or newer** | Download from [python.org](https://www.python.org/downloads/). During setup, tick **"Add python.exe to PATH"**. |
-| **An MCP client** | [Claude Desktop](https://claude.ai/download) (recommended), Claude Code, Cline, or another MCP client |
+| **Python 3.10 or newer** | The installer finds it, even if it isn't on PATH. Don't have it? Get it from [python.org](https://www.python.org/downloads/) (tick **"Add python.exe to PATH"**) or run `winget install -e --id Python.Python.3.12`. |
+| **Claude** | [Claude Desktop](https://claude.ai/download) and/or Claude Code. Other MCP clients (Cline, Cursor ...) work with the [manual setup](#installation). |
 
 You do **not** need Visual Studio or the .NET SDK. A ready-made plugin is included.
 
 ---
 
-## Installation (about 10 minutes)
+## Installation
 
-### Step 1: Download the project
+Pick one way. Each one ends in the same setup.
 
-**Option A: with Git**
+### Option A: ask Claude to install it (easiest)
 
-```bat
-git clone https://github.com/ctrlxbruce/Autocad-Civil3D-MCP.git C:\civil3d-mcp
-```
+This needs **Claude Code**: the **Code** tab in the Claude desktop app, or the `claude` command in a terminal.
+The normal Claude chat can't run programs on your computer, so it can't install anything.
 
-**Option B: download as ZIP**
+1. Close Civil 3D.
+2. Send Claude this message:
 
-1. On this page, click the green **Code** button, then **Download ZIP**.
-2. Right-click the ZIP, choose **Properties**, tick **Unblock** if you see it, and click **OK**.
-3. Extract it, rename the folder from `Autocad-Civil3D-MCP-main` to `civil3d-mcp`, and move it to `C:\`.
+   ```
+   Install this repo: https://github.com/ctrlxbruce/Autocad-Civil3D-MCP
+   ```
 
-You should now have `C:\civil3d-mcp\README.md`.
+3. Claude downloads the project to `C:\civil3d-mcp` and runs the installer. Approve the steps when Claude asks.
+4. When Claude says it's done, fully quit Claude Desktop (right-click its icon in the system tray, then **Quit**)
+   and open it again. In Claude Code, start a new session.
 
-> [!TIP]
-> You can keep the folder somewhere else. Just use your own path in Step 3 instead of `C:\civil3d-mcp`.
+### Option B: one-click installer
 
-### Step 2: Install the plugin
-
-1. **Close Civil 3D.**
-2. Open `C:\civil3d-mcp\release\` and double-click **`install_prebuilt.bat`**.
+1. Download the project:
+   - **With Git:** `git clone https://github.com/ctrlxbruce/Autocad-Civil3D-MCP.git C:\civil3d-mcp`
+   - **As a ZIP:** click the green **Code** button on this page, then **Download ZIP**. Right-click the ZIP, choose
+     **Properties**, tick **Unblock** if you see it, click **OK**, then extract it. Any folder works.
+2. Close Civil 3D.
+3. Double-click **`install.bat`** in the project folder.
    If Windows shows *"Windows protected your PC"*, click **More info**, then **Run anyway**.
-3. Wait for **DONE**, then press any key.
+4. When it says **Civil 3D MCP is installed**, fully quit Claude Desktop and open it again.
 
-The installer does two things:
-- copies the plugin to `%APPDATA%\Autodesk\ApplicationPlugins\Civil3DMcp.bundle`, so Civil 3D loads it automatically every time it starts;
-- installs the two Python packages the server needs (`mcp` and `anyio`).
+### What the installer does
 
-### Step 3: Connect Claude
+| Step | What happens |
+|---|---|
+| 1 | Checks that Civil 3D is closed, and looks for Civil 3D 2025 / 2026 |
+| 2 | Copies the plugin to `%APPDATA%\Autodesk\ApplicationPlugins\Civil3DMcp.bundle`, so Civil 3D loads it every time it starts |
+| 3 | Finds Python 3.10+ (even if it isn't on PATH) and creates a private environment in `mcp-server\.venv` with the packages the server needs |
+| 4 | Adds the `civil3d` server to **Claude Desktop** and **Claude Code**, whichever you have. Your other Claude settings are kept, and the old Claude Desktop config is saved as `claude_desktop_config.json.civil3d-backup` |
+| 5 | Installs the **civil3d skill** for Claude Code, so you can type `/civil3d` |
 
-**Claude Desktop**
+You can run it again at any time; it updates the existing setup. To load fewer tools, run
+`install.bat -Mode lean` (see [Modes](#modes-control-token-use)).
 
-1. Open Claude Desktop and go to **Settings → Developer → Edit Config**. This opens `claude_desktop_config.json`.
-2. Paste the following and save:
+<details>
+<summary><b>Option C: manual setup (other MCP clients, or if you prefer)</b></summary>
+
+1. Close Civil 3D and copy the folder `release\Civil3DMcp.bundle` into `%APPDATA%\Autodesk\ApplicationPlugins\`.
+2. Install the Python packages: `py -3 -m pip install -r C:\civil3d-mcp\mcp-server\requirements.txt`
+3. **Claude Desktop:** open **Settings → Developer → Edit Config** and add:
 
    ```json
    {
@@ -115,31 +131,33 @@ The installer does two things:
    }
    ```
 
-   If the file already has other servers, add only the `"civil3d": { ... }` part inside the existing `"mcpServers"`.
-   Keep the double backslashes (`\\`) in the path.
+   If the file already has other servers, add only the `"civil3d": { ... }` part inside `"mcpServers"`, and keep
+   the double backslashes. If `python` doesn't start on your PC, put the full path to `python.exe` in `"command"`.
+   Then fully quit Claude Desktop and open it again.
+4. **Claude Code:** `claude mcp add civil3d --scope user --env CIVIL3D_MCP_MODE=full -- python C:\civil3d-mcp\mcp-server\server.py`
+5. **Other MCP clients** (Cline, Cursor and others): add a server with command `python` and argument
+   `C:\civil3d-mcp\mcp-server\server.py`.
 
-3. **Fully quit Claude Desktop** (right-click its icon in the system tray, then **Quit**) and open it again.
-
-**Claude Code**
-
-```bat
-claude mcp add civil3d -e CIVIL3D_MCP_MODE=full -- python C:\civil3d-mcp\mcp-server\server.py
-```
-
-**Other MCP clients** (Cline, Cursor and others): add a server with command `python` and argument
-`C:\civil3d-mcp\mcp-server\server.py`.
+</details>
 
 ---
 
 ## First use
 
-1. Start **Civil 3D** and open a drawing.
-   The command line should show:
+1. Start **Civil 3D** and open a drawing. The command line shows:
    ```
    [Civil3D MCP] Ready. Listening on 127.0.0.1:8765. ... tools loaded.
    ```
-2. Open **Claude** next to it.
-3. Type **"Ping Civil 3D"**. If Claude answers that Civil 3D is connected, you're ready.
+2. Open **Claude** and put the two windows side by side: press **Windows + ←** on one and **Windows + →** on the other.
+3. In Claude, type:
+
+   ```
+   Use Civil 3D
+   ```
+
+   Claude checks the connection and sums up what is in your drawing. In Claude Code you can also type **`/civil3d`**.
+4. Now ask for what you need, for example *"Draw a 20 × 10 rectangle on layer C-BLDG"*. The change appears in
+   Civil 3D right away.
 
 > [!NOTE]
 > Civil 3D must be open with a drawing loaded whenever you ask Claude to work in it.
@@ -185,10 +203,11 @@ Set the mode with `CIVIL3D_MCP_MODE` in the config from Step 3.
 
 | Problem | Fix |
 |---|---|
+| Installer: **"Civil 3D (or AutoCAD) is running"** | Close Civil 3D (check the taskbar), then run the installer again. |
+| Installer: **"Python 3.10 or newer was not found"** | Install Python from [python.org](https://www.python.org/downloads/) or run `winget install -e --id Python.Python.3.12`, then run the installer again. |
 | Claude says **"Civil 3D is not reachable"** | Open Civil 3D **and a drawing**. Type `MCPSTATUS` in Civil 3D. If it says STOPPED, type `MCPSTART`. |
-| `MCPSTATUS` is an unknown command | The plugin isn't loaded. Close Civil 3D and run `install_prebuilt.bat` again. To load it once by hand, type `NETLOAD` and pick `%APPDATA%\Autodesk\ApplicationPlugins\Civil3DMcp.bundle\Contents\Civil3DMcp.dll`. |
-| The civil3d tools don't appear in Claude | Check the config file: the path must be correct, use `\\`, and have no missing commas. Then fully quit and reopen Claude Desktop. |
-| `'python' is not recognized` | Reinstall Python and tick **"Add python.exe to PATH"**, then run `install_prebuilt.bat` again. Or put the full path to `python.exe` in `"command"`. |
+| `MCPSTATUS` is an unknown command | The plugin isn't loaded. Close Civil 3D and run `install.bat` again. To load it once by hand, type `NETLOAD` and pick `%APPDATA%\Autodesk\ApplicationPlugins\Civil3DMcp.bundle\Contents\Civil3DMcp.dll`. |
+| The civil3d tools don't appear in Claude | Run `install.bat` again and read its summary. Then fully quit and reopen Claude Desktop, or start a new Claude Code session (`claude mcp list` should show `civil3d`). |
 | **"Civil 3D did not answer in time"** | A dialog box is probably open in Civil 3D. Close it and try again. |
 | Can't add pipes or structures | Set the pipe catalog first: **Manage tab → Set Pipe Network Catalog**. |
 | Something else | Open an [issue](https://github.com/ctrlxbruce/Autocad-Civil3D-MCP/issues) with the error message and your Civil 3D version. |
@@ -223,14 +242,15 @@ Set the mode with `CIVIL3D_MCP_MODE` in the config from Step 3.
 
 **Update**
 
-1. Get the new version: run `git pull` in `C:\civil3d-mcp`, or download the ZIP again and replace the folder.
-2. Close Civil 3D and run `release\install_prebuilt.bat` again.
+- Ask Claude Code: *"Update the Civil 3D MCP repo in C:\civil3d-mcp and run its installer again"*, or
+- run `git pull` in the project folder (or download the ZIP again), close Civil 3D, and double-click `install.bat`.
 
 **Uninstall**
 
-1. Close Civil 3D and delete the folder `%APPDATA%\Autodesk\ApplicationPlugins\Civil3DMcp.bundle`.
-2. Remove the `"civil3d"` entry from your Claude config.
-3. Delete `C:\civil3d-mcp`.
+1. Close Civil 3D and Claude.
+2. Double-click **`uninstall.bat`** in the project folder. It removes the plugin, the `civil3d` entry from Claude
+   Desktop and Claude Code, the `/civil3d` skill and the Python environment. Your other Claude settings are kept.
+3. Delete the project folder.
 
 ---
 
@@ -312,8 +332,8 @@ skills/
    ```xml
    <AcadDir>C:\Program Files\Autodesk\AutoCAD 2025</AcadDir>
    ```
-3. Close Civil 3D and double-click `build_and_install.bat`. It builds the plugin, installs it into the autoloader and
-   installs the Python requirements.
+3. Close Civil 3D and double-click `build_and_install.bat`. It builds the plugin, then runs the normal installer
+   with your new build.
 
 No NuGet packages are needed: code execution uses the Roslyn compiler that ships with AutoCAD.
 
@@ -387,7 +407,10 @@ DatabaseServices, Geometry, EditorInput, Colors), `Autodesk.Civil`, `Autodesk.Ci
 
 ```
 civil3d-mcp/
-├── README.md · LICENSE · build_and_install.bat · claude_desktop_config.example.json
+├── install.bat · uninstall.bat      one-step installer / uninstaller (Windows)
+├── README.md · CLAUDE.md · LICENSE · build_and_install.bat · claude_desktop_config.example.json
+├── scripts/                         install.ps1 · uninstall.ps1 · civil3d-common.ps1
+├── claude-skill/civil3d/SKILL.md    the /civil3d skill for Claude Code
 ├── docs/tool-reference.md
 ├── skills/                          C# templates for code execution
 ├── mcp-server/                      Python MCP server

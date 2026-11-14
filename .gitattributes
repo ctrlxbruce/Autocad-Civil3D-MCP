@@ -1,0 +1,9 @@
+# Store text with LF in the repo. Windows scripts always get CRLF when checked out
+# or downloaded as a ZIP, because cmd.exe and PowerShell 5.1 expect Windows line endings.
+* text=auto
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+*.dll binary
+*.png binary
+*.jpg binary

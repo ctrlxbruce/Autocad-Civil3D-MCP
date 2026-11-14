@@ -26,6 +26,8 @@ from tools import LOCAL, all_tools  # noqa: E402
 MODE = os.environ.get("CIVIL3D_MCP_MODE", "full").lower()  # full | lean | code
 
 INSTRUCTIONS = """You control Autodesk Civil 3D through these tools.
+- When the user says "use Civil 3D" (or starts asking for drawing work), call system_ping, then doc_info,
+  and give a 2-3 line summary of the open drawing. If ping fails, ask them to open Civil 3D and a drawing.
 - Coordinates are drawing units; points are [x, y] or [x, y, z].
 - Angles are DEGREES in dedicated tools, but RADIANS in props_set / props_call (raw API).
 - Every create tool returns a handle. Civil objects can also be referred to by NAME.
