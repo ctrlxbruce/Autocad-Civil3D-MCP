@@ -1,0 +1,167 @@
+[
+ {
+  "tool": "system.ping"
+ },
+ {
+  "tool": "drafting.rectangle",
+  "args": {
+   "corner1": [
+    0,
+    0
+   ],
+   "corner2": [
+    20,
+    10
+   ],
+   "layer": "C-BLDG",
+   "color": "2"
+  }
+ },
+ {
+  "tool": "points.create",
+  "args": {
+   "points": [
+    {
+     "x": 0,
+     "y": 0,
+     "z": 100,
+     "desc": "A"
+    },
+    {
+     "x": 200,
+     "y": 0,
+     "z": 101,
+     "desc": "A"
+    },
+    {
+     "x": 200,
+     "y": 100,
+     "z": 104,
+     "desc": "A"
+    },
+    {
+     "x": 0,
+     "y": 100,
+     "z": 102,
+     "desc": "A"
+    },
+    {
+     "x": 100,
+     "y": 50,
+     "z": 103,
+     "desc": "A"
+    }
+   ]
+  }
+ },
+ {
+  "tool": "point_groups.create",
+  "args": {
+   "name": "ALL",
+   "include_numbers": "1-9999"
+  }
+ },
+ {
+  "tool": "styles.create",
+  "args": {
+   "category": "SurfaceStyles",
+   "name": "Final Contours"
+  }
+ },
+ {
+  "tool": "surface.create",
+  "args": {
+   "name": "EG",
+   "style": "Final Contours"
+  }
+ },
+ {
+  "tool": "surface.add_point_groups",
+  "args": {
+   "surface": "EG",
+   "groups": [
+    "ALL"
+   ]
+  }
+ },
+ {
+  "tool": "surface.style_contours",
+  "args": {
+   "style": "Final Contours",
+   "major_interval": 1,
+   "minor_interval": 0.25,
+   "smooth": true,
+   "smoothing_type": "SplineCurve",
+   "smoothing_amount": 6
+  }
+ },
+ {
+  "tool": "drafting.polyline",
+  "args": {
+   "points": [
+    [
+     10,
+     10
+    ],
+    [
+     150,
+     60
+    ],
+    [
+     190,
+     90
+    ]
+   ]
+  },
+  "save": "fpl"
+ },
+ {
+  "tool": "featureline.from_entity",
+  "args": {
+   "entity": "$fpl.handle",
+   "name": "FL-1",
+   "surface": "EG"
+  }
+ },
+ {
+  "tool": "featureline.set_elevations",
+  "args": {
+   "featureline": "FL-1",
+   "raise": 1.5
+  }
+ },
+ {
+  "tool": "props.get",
+  "args": {
+   "handle": "FL-1",
+   "path": "MaxElevation"
+  }
+ },
+ {
+  "tool": "pipes.network_create",
+  "args": {
+   "name": "Storm",
+   "surface": "EG"
+  }
+ },
+ {
+  "tool": "pipes.add_structure",
+  "args": {
+   "network": "Storm",
+   "family": "Concentric Cylindrical Structure SI",
+   "location": [
+    20,
+    20
+   ]
+  }
+ },
+ {
+  "tool": "styles.list",
+  "args": {
+   "category": "SurfaceStyles"
+  }
+ },
+ {
+  "tool": "doc.zoom_extents"
+ }
+]

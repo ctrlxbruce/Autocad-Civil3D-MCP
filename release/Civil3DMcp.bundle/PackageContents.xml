@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Autoloader: Civil 3D loads the plugin automatically on every start.
+     build_and_install.bat copies this folder to %APPDATA%\Autodesk\ApplicationPlugins\Civil3DMcp.bundle -->
+<ApplicationPackage SchemaVersion="1.0" AutodeskProduct="AutoCAD" ProductType="Application"
+                    Name="Civil3DMcp" Description="Lets Claude control Civil 3D through MCP"
+                    AppVersion="1.0.0" Author="Civil3D MCP"
+                    ProductCode="{928BAD04-FACC-4678-A17B-C6BC37A44A3C}"
+                    UpgradeCode="{518F88FD-12EE-4329-908B-7837ED83D9E0}">
+  <CompanyDetails Name="Civil3D MCP" />
+  <Components>
+    <RuntimeRequirements OS="Win64" Platform="Civil3D" SeriesMin="R25.0" SeriesMax="R26.9" />
+    <ComponentEntry AppName="Civil3DMcp" ModuleName="./Contents/Civil3DMcp.dll"
+                    LoadOnAutoCADStartup="True" LoadOnCommandInvocation="False" />
+  </Components>
+</ApplicationPackage>

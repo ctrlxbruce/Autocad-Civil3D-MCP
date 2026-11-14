@@ -1,0 +1,34 @@
+TOOLS = {
+    "system.ping": ("Check that Civil 3D and the plugin are running.", {}),
+    "system.list_tools": ("List every tool name the plugin knows.", {}),
+    "doc.info": ("Info about the open drawing: name, units, current layer/text/dim style, extents.", {}),
+    "doc.run_command": (
+        "FALLBACK for anything without a dedicated tool: send text to the Civil 3D command line exactly as typed. "
+        "Use '-' command versions to avoid dialogs (e.g. '-LAYER', '-PLOT'). Separate inputs with spaces or \\n. "
+        "Examples: 'FILLET R 2 ', '_TRIM', 'REVCLOUD', '_LandXMLIn', 'CreateSurfaceFromCorridor'.",
+        {"command": ("string", "Command text", True)}),
+    "doc.get_sysvar": ("Read a system variable (e.g. DIMSCALE, LTSCALE, PDMODE).", {"name": ("string", "Variable name", True)}),
+    "doc.set_sysvar": ("Set a system variable.", {"name": ("string", "Variable name", True), "value": ("string", "New value", True)}),
+    "doc.zoom_extents": ("Zoom to extents.", {}),
+    "doc.save": ("Save the drawing (QSAVE) or Save As when path is given.", {"path": ("string", "Optional .dwg path")}),
+    "query.list": ("List objects in the current space with handle, type, layer and name. Filter by type (Line, Polyline, "
+                   "Circle, TinSurface, Alignment, CogoPoint, ...) and/or layer.",
+                   {"type": ("string", "Class name filter"), "layer": ("string", "Layer filter"), "limit": ("integer", "Max items (default 200)")}),
+    "query.count_by_type": ("Count objects in the current space by type.", {}),
+    "props.get": ("Read ALL properties of any object (entity, Civil object, style) by handle or Civil object name. "
+                  "Optional dotted path to read one value, e.g. 'ContourStyle.MajorContourInterval'.",
+                  {"handle": ("string", "Handle or name", True), "path": ("string", "Optional property path")}),
+    "props.set": ("Set ANY properties on one or more objects. props example: {\"Layer\":\"C-ROAD\",\"Color\":\"1\","
+                  "\"Elevation\":100,\"StyleId\":\"<style handle>\"}. Dotted paths allowed. ANGLES ARE IN RADIANS here.",
+                  {"handle": ("string", "Handle or name"), "handles": ("strings", "Several handles"),
+                   "props": ("object", "Property name → value", True)}),
+    "props.methods": ("List the API methods available on an object (to use with props_call).", {"handle": ("string", "Handle or name", True)}),
+    "props.call": ("Call ANY Civil 3D / AutoCAD API method on an object, e.g. method 'RaiseSurface' args [2.5]. "
+                   "Strings are converted to enums, handles to ObjectIds, [x,y,z] to points.",
+                   {"handle": ("string", "Handle or name", True), "method": ("string", "Method name", True),
+                    "args": ("array", "Arguments in order")}),
+    "entity.delete": ("Delete objects.", {"handles": ("strings", "Handles", True)}),
+    "measure.distance": ("Distance, 2D distance, angle and deltas between two points.",
+                         {"p1": ("point", "First point", True), "p2": ("point", "Second point", True)}),
+    "measure.entity": ("Length, area, start/end and extents of an object.", {"handle": ("string", "Handle", True)}),
+}

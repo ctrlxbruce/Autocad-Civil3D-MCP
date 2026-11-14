@@ -1,0 +1,9 @@
+bin/
+obj/
+.vs/
+*.user
+__pycache__/
+*.pyc
+.pytest_cache/
+test-build/
+mcp-results.json

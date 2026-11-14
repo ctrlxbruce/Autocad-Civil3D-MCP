@@ -1,0 +1,26 @@
+from .common import HANDLES
+
+TOOLS = {
+    "modify.move": ("Move objects by from→to.", {**HANDLES, "from": ("point", "Base point (default 0,0)"), "to": ("point", "Destination", True)}),
+    "modify.copy": ("Copy objects by from→to. Returns new handles.", {**HANDLES, "from": ("point", "Base point"), "to": ("point", "Destination", True)}),
+    "modify.rotate": ("Rotate objects.", {**HANDLES, "base": ("point", "Base point", True), "angle": ("number", "Degrees, CCW", True)}),
+    "modify.scale": ("Scale objects.", {**HANDLES, "base": ("point", "Base point", True), "factor": ("number", "Scale factor", True)}),
+    "modify.mirror": ("Mirror objects about the line p1-p2.",
+                      {**HANDLES, "p1": ("point", "Mirror line start", True), "p2": ("point", "Mirror line end", True),
+                       "erase_source": ("boolean", "Erase originals")}),
+    "modify.offset": ("Offset a curve (line, polyline, arc, circle, spline). Sign of distance picks the side.",
+                      {"handle": ("string", "Curve handle", True), "distance": ("number", "Offset distance (+/-)", True),
+                       "layer": ("string", "Layer for result")}),
+    "modify.explode": ("Explode objects (blocks, polylines, dims ...).", HANDLES),
+    "modify.join": ("Join lines/arcs/polylines onto a target.", {"target": ("string", "Target handle", True), **HANDLES}),
+    "modify.array_rect": ("Rectangular array (copies).", {**HANDLES, "rows": ("integer", "Rows"), "columns": ("integer", "Columns"),
+                                                         "row_spacing": ("number", "Row spacing"), "column_spacing": ("number", "Column spacing")}),
+    "modify.array_polar": ("Polar array (copies).", {**HANDLES, "center": ("point", "Center", True), "count": ("integer", "Total items", True),
+                                                    "fill_angle": ("number", "Degrees (default 360)")}),
+    "modify.match_properties": ("Copy layer/color/linetype/lineweight/transparency from source to objects.",
+                                {"source": ("string", "Source handle", True), **HANDLES}),
+    "modify.polyline_vertex": ("Edit a polyline vertex. action: add | move | remove | bulge | width.",
+                               {"handle": ("string", "Polyline", True), "action": ("string", "Action", True), "index": ("integer", "Vertex index", True),
+                                "point": ("point", "For add/move"), "bulge": ("number", "Bulge"),
+                                "start_width": ("number", "Width"), "end_width": ("number", "Width")}),
+}

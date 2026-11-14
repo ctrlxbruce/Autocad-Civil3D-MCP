@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "civil3d": {
+      "command": "python",
+      "args": ["C:\\civil3d-mcp\\mcp-server\\server.py"]
+    }
+  }
+}

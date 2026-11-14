@@ -1,0 +1,47 @@
+_S = {"surface": ("string", "Surface name or handle", True)}
+
+TOOLS = {
+    "surface.create": ("Create an empty TIN or grid surface.",
+                       {"name": ("string", "Name", True), "type": ("string", "tin (default) | grid"), "style": ("string", "Surface style"),
+                        "layer": ("string", "Layer"), "description": ("string", "Description")}),
+    "surface.import_tin_file": ("Create a surface from a .tin file.",
+                                {"path": ("string", ".tin path", True), "name": ("string", "Name"), "style": ("string", "Style")}),
+    "surface.add_point_groups": ("Add point groups to a surface definition.", {**_S, "groups": ("strings", "Point group names", True)}),
+    "surface.add_points": ("Add XYZ points directly to a TIN surface.", {**_S, "points": ("points", "[[x,y,z],...]", True)}),
+    "surface.add_breaklines": ("Add breaklines from polylines/3D polylines/feature lines.",
+                               {**_S, "handles": ("strings", "Objects", True), "type": ("string", "standard | proximity | farfield"),
+                                "mid_ordinate": ("number", "Default 0.1"), "max_distance": ("number", "Supplementing distance"),
+                                "weeding_distance": ("number", ""), "weeding_angle": ("number", "")}),
+    "surface.add_contours": ("Build/add surface data from existing contour polylines (with elevation).",
+                             {**_S, "handles": ("strings", "Contour polylines", True), "mid_ordinate": ("number", ""),
+                              "max_distance": ("number", ""), "weeding_distance": ("number", ""), "weeding_angle": ("number", "")}),
+    "surface.add_boundary": ("Add a boundary from a closed polyline.",
+                             {**_S, "handles": ("strings", "Closed polylines", True), "type": ("string", "Outer | Hide | Show | DataClip"),
+                              "non_destructive": ("boolean", "Default true"), "mid_ordinate": ("number", "")}),
+    "surface.add_dem": ("Add a DEM file (.tif/.dem/.asc) to a surface.", {**_S, "path": ("string", "DEM path", True)}),
+    "surface.edit": ("Edit a surface. op: raise(amount) | paste(source) | add_point(point) | delete_point(point) | "
+                     "add_line(start,end) | delete_line(point) | swap_edge(point) | smooth(method nni|kriging, grid_spacing) | "
+                     "simplify(method PointRemoval|EdgeContraction, percent 0-1).",
+                     {**_S, "op": ("string", "Operation", True), "amount": ("number", ""), "source": ("string", "Surface to paste"),
+                      "point": ("point", ""), "start": ("point", ""), "end": ("point", ""), "method": ("string", ""),
+                      "grid_spacing": ("number", ""), "percent": ("number", ""), "locations": ("string", "")}),
+    "surface.info": ("Surface statistics: points, triangles, min/max/mean elevation, area, slopes, style.", _S),
+    "surface.elevation_at": ("Surface elevation at point(s).", {**_S, "point": ("point", "XY"), "points": ("points", "Several")}),
+    "surface.extract_contours": ("Extract contours/border to AutoCAD polylines. what: contours (interval) | major | minor | border.",
+                                 {**_S, "what": ("string", "Default contours"), "interval": ("number", "Contour interval"),
+                                  "smoothing": ("string", "AddVertices | SplineCurve"), "smoothness": ("integer", "1-10"),
+                                  "layer": ("string", "Layer for results")}),
+    "surface.style_contours": ("Set contour settings on a SURFACE STYLE: intervals, base elevation, CONTOUR SMOOTHING, "
+                               "and show/hide components (MajorContour, MinorContour, Triangles, Points, Boundary, Elevations, "
+                               "Slopes, SlopeArrows, Watersheds, UserContours, Gridded).",
+                               {"style": ("string", "Surface style name", True), "major_interval": ("number", ""),
+                                "minor_interval": ("number", ""), "base_elevation": ("number", ""), "smooth": ("boolean", "Smooth contours"),
+                                "smoothing_type": ("string", "AddVertices | SplineCurve"), "smoothing_amount": ("integer", "1-10"),
+                                "depression_ticks": ("boolean", ""), "show": ("object", "{\"Triangles\":false,\"MajorContour\":true}")}),
+    "surface.analysis": ("Run elevation/slope analysis (ranges) and return the bands.",
+                         {**_S, "kind": ("string", "elevation | slope | watershed"), "ranges": ("integer", "Number of ranges")}),
+    "surface.volume": ("Cut/fill between two surfaces (creates a TIN volume surface) or read an existing one.",
+                       {"base": ("string", "Base (existing) surface"), "comparison": ("string", "Comparison (design) surface"),
+                        "name": ("string", "Volume surface name"), "volume_surface": ("string", "Use existing volume surface"),
+                        "cut_factor": ("number", ""), "fill_factor": ("number", "")}),
+}

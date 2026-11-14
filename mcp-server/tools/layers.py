@@ -1,0 +1,15 @@
+TOOLS = {
+    "layers.list": ("List all layers with color, linetype, lineweight, on/frozen/locked/plot.", {}),
+    "layers.set": ("Create a layer or change it.",
+                   {"name": ("string", "Layer name", True), "new_name": ("string", "Rename to"), "color": ("string", "Color"),
+                    "linetype": ("string", "Linetype"), "lineweight": ("number", "mm"), "on": ("boolean", "On/off"),
+                    "frozen": ("boolean", "Freeze"), "locked": ("boolean", "Lock"), "plot": ("boolean", "Plottable"),
+                    "description": ("string", "Description"), "transparency": ("number", "Percent"),
+                    "make_current": ("boolean", "Make current")}),
+    "layers.set_current": ("Make a layer current (creates it if missing).", {"name": ("string", "Layer", True)}),
+    "layers.delete": ("Delete an unused layer.", {"name": ("string", "Layer", True)}),
+    "linetypes.load": ("Load linetypes from acad.lin/acadiso.lin, optionally set global LTSCALE.",
+                       {"names": ("strings", "e.g. ['DASHED','CENTER','HIDDEN','PHANTOM','FENCELINE1']", True),
+                        "ltscale": ("number", "Global linetype scale")}),
+    "linetypes.list": ("List loaded linetypes.", {}),
+}

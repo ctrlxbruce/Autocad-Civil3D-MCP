@@ -1,0 +1,16 @@
+TOOLS = {
+    "layouts.list": ("List layouts (sheets).", {}),
+    "layouts.create": ("Create a layout tab.", {"name": ("string", "Layout name", True), "make_current": ("boolean", "Default true")}),
+    "layouts.set_current": ("Switch to a layout or 'Model'.", {"name": ("string", "Layout", True)}),
+    "layouts.delete": ("Delete a layout.", {"name": ("string", "Layout", True)}),
+    "layouts.viewport": ("Add a viewport on a layout.",
+                         {"layout": ("string", "Layout (default current)"), "center": ("point", "Center on paper", True),
+                          "width": ("number", "Paper width", True), "height": ("number", "Paper height", True),
+                          "view_center": ("point", "Model point to look at"), "scale": ("number", "Custom scale, e.g. 1:500 → 0.002"),
+                          "twist": ("number", "Twist degrees"), "lock": ("boolean", "Lock display"), "layer": ("string", "Layer")}),
+    "layouts.list_papers": ("List paper sizes for a plot device.", {"device": ("string", "Default 'DWG To PDF.pc3'")}),
+    "layouts.plot_pdf": ("Plot the current layout (or model extents) to a PDF file.",
+                         {"output_path": ("string", "C:\\\\path\\\\sheet.pdf", True), "device": ("string", "Plot device"),
+                          "paper": ("string", "Canonical paper name from layouts_list_papers"),
+                          "area": ("string", "'layout' or 'extents'"), "style_table": ("string", "e.g. monochrome.ctb")}),
+}
