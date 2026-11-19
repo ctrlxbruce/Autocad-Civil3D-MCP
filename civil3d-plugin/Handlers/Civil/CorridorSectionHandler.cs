@@ -33,8 +33,13 @@ namespace Civil3DMcp.Handlers
             var pr = c.Find(a.NeedStr("profile"));
             var bl = Reflect.Call(Reflect.Get(corr, "Baselines"), "Add", a.Str("baseline_name", "Baseline (1)"), al, pr);
             var alObj = c.Open(al);
-            double st = a.Dbl("start_station", Convert.ToDouble(Reflect.Get(alObj, "StartingStation")));
-            double en = a.Dbl("end_station", Convert.ToDouble(Reflect.Get(alObj, "EndingStation")));
+            var prObj = c.Open(pr);
+            // Default range: where both the alignment and the profile exist. Past the profile's end Civil 3D
+            // would build the corridor at elevation 0.
+            double st = a.Dbl("start_station", Math.Max(Convert.ToDouble(Reflect.Get(alObj, "StartingStation")),
+                                                         Convert.ToDouble(Reflect.Get(prObj, "StartingStation"))));
+            double en = a.Dbl("end_station", Math.Min(Convert.ToDouble(Reflect.Get(alObj, "EndingStation")),
+                                                       Convert.ToDouble(Reflect.Get(prObj, "EndingStation"))));
             var reg = Reflect.Call(Reflect.Get(bl, "BaselineRegions"), "Add", a.Str("region_name", "Region (1)"), c.Find(a.NeedStr("assembly")), st, en);
             var warnings = new List<string>();
             if (a.Has("frequency"))
@@ -70,7 +75,16 @@ namespace Civil3DMcp.Handlers
             foreach (var code in a.Strs("feature_line_codes")) try { Reflect.Call(cs, "AddFeatureLineCode", code); } catch { }
             if (a.Has("style")) try { Reflect.Set(cs, "SurfaceStyleId", c.StyleId("SurfaceStyles", a.Str("style"))); } catch { }
             Reflect.Call(corr, "Rebuild");
-            return Props.Pick(cs, "Name", "SurfaceId");
+            var res = Props.Pick(cs, "Name", "SurfaceId");
+            // Build the surface now, so the next call (volume, info) sees its data.
+            try
+            {
+                var surf = c.Open((ObjectId)Reflect.Get(cs, "SurfaceId"), true);
+                Reflect.Call(surf, "Rebuild");
+                res["points"] = Reflect.Get(Reflect.Call(surf, "GetGeneralProperties"), "NumberOfPoints");
+            }
+            catch (Exception ex) { res["warning"] = "surface not rebuilt yet: " + (ex.InnerException ?? ex).Message; }
+            return res;
         }
 
         // ---------------------------------------------------------------- sections

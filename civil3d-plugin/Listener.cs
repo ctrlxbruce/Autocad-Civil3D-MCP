@@ -10,9 +10,11 @@ namespace Civil3DMcp
 {
     /// <summary>
     /// Tiny local TCP server. One JSON request per line, one JSON reply per line.
-    /// Request:  {"id":1,"tool":"drafting.line","args":{...}}
+    /// Request:  {"id":1,"token":"...","tool":"drafting.line","args":{...}}
     /// Reply:    {"id":1,"ok":true,"result":{...}}  or  {"id":1,"ok":false,"error":"..."}
-    /// Only listens on 127.0.0.1, so nothing outside your PC can reach it.
+    /// Only listens on 127.0.0.1, so nothing outside your PC can reach it. Every request must carry the token
+    /// from %LOCALAPPDATA%\Civil3DMcp\token-&lt;port&gt; (see Security); a line that isn't a JSON request, or a wrong
+    /// token, closes the connection.
     /// </summary>
     public class Listener
     {
@@ -27,6 +29,7 @@ namespace Civil3DMcp
         {
             _tcp = new TcpListener(IPAddress.Loopback, _port);
             _tcp.Start();
+            Security.NewToken(_port);
             Running = true;
             _thread = new Thread(AcceptLoop) { IsBackground = true, Name = "Civil3DMcp.Listener" };
             _thread.Start();
@@ -34,6 +37,8 @@ namespace Civil3DMcp
 
         public void Stop()
         {
+            // A second Civil 3D can't bind the port and never writes a token, so it must not delete the first one's.
+            if (Running) Security.DropToken(_port);
             Running = false;
             try { _tcp?.Stop(); } catch { }
         }
@@ -62,12 +67,27 @@ namespace Civil3DMcp
                 while (Running && (line = reader.ReadLine()) != null)
                 {
                     if (string.IsNullOrWhiteSpace(line)) continue;
-                    JsonNode id = null;
+                    JsonObject req = null;
+                    try { req = JsonNode.Parse(line) as JsonObject; } catch { }
+                    if (req == null)
+                    {
+                        // Not our protocol (for example a browser's HTTP request): answer once and hang up, so
+                        // nothing later on this connection is ever read as a request.
+                        writer.WriteLine(Refusal(null, "Not a Civil 3D MCP request."));
+                        return;
+                    }
+                    JsonNode id = req["id"]?.DeepClone();
+                    if (!Security.TokenMatches(req["token"]?.ToString()))
+                    {
+                        writer.WriteLine(Refusal(id,
+                            "Missing or wrong token. The MCP server reads it from " + Security.TokenFile(_port)
+                            + ", which Civil 3D writes when the plugin starts. Make sure the MCP server and the plugin come "
+                            + "from the same version (run the installer again), then restart Claude."));
+                        return;
+                    }
                     JsonObject reply;
                     try
                     {
-                        var req = JsonNode.Parse(line).AsObject();
-                        id = req["id"]?.DeepClone();
                         string tool = req["tool"]?.ToString();
                         var args = req["args"] as JsonObject ?? new JsonObject();
                         // Everything that touches the drawing runs on the main thread.
@@ -82,5 +102,8 @@ namespace Civil3DMcp
                 }
             }
         }
+
+        static string Refusal(JsonNode id, string error) =>
+            new JsonObject { ["id"] = id, ["ok"] = false, ["error"] = error }.ToJsonString();
     }
 }

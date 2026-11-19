@@ -96,11 +96,15 @@ namespace Civil3DMcp
                 var found = MatchName(SafeIds(Reflect.Get(Civ, coll)), name);
                 if (!found.IsNull) return found;
             }
-            foreach (var getter in new[] { "GetPipeNetworkIds", "GetPressurePipeNetworkIds", "GetSiteIds" })
+            foreach (var getter in new[] { "GetPipeNetworkIds", "GetSiteIds" })
             {
                 object ids = null;
                 try { ids = Reflect.Call(Civ, getter); } catch { }
                 var found = MatchName(SafeIds(ids), name);
+                if (!found.IsNull) return found;
+            }
+            {
+                var found = MatchName(PressureNetworkIds(), name);
                 if (!found.IsNull) return found;
             }
             // Model space: anything with a Name property (surfaces, alignments, profiles, corridors ...)
@@ -126,6 +130,13 @@ namespace Civil3DMcp
                 catch { }
             }
             return ObjectId.Null;
+        }
+
+        /// <summary>Pressure networks. GetPressurePipeNetworkIds is an extension method (AeccPressurePipesMgd), so reflection on the document can't see it.</summary>
+        public IEnumerable<ObjectId> PressureNetworkIds()
+        {
+            try { return SafeIds(CivilDocumentPressurePipesExtension.GetPressurePipeNetworkIds(Civ)); }
+            catch { return Enumerable.Empty<ObjectId>(); }
         }
 
         private ObjectId MatchName(IEnumerable<ObjectId> ids, string name)

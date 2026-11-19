@@ -21,13 +21,46 @@ import os  # noqa: E402
 
 import bridge  # noqa: E402
 import skills_lib  # noqa: E402
-from tools import LOCAL, all_tools  # noqa: E402
+from tools import LOCAL, all_tools, hints  # noqa: E402
 
 MODE = os.environ.get("CIVIL3D_MCP_MODE", "full").lower()  # full | lean | code
+# Results longer than this are shortened (long lists cut to a prefix) so a big drawing can't flood the chat.
+MAX_RESULT_CHARS = int(os.environ.get("CIVIL3D_MCP_MAX_RESULT_CHARS", "60000"))
+
+
+def _shrink(value, keep: int):
+    if isinstance(value, list):
+        items = [_shrink(v, keep) for v in value[:keep]]
+        if len(value) > keep:
+            items.append({"_summarized": f"{len(value) - keep} more items not shown"})
+        return items
+    if isinstance(value, dict):
+        return {k: _shrink(v, keep) for k, v in value.items()}
+    if isinstance(value, str) and len(value) > 2000:
+        return value[:2000] + f"... ({len(value) - 2000} more characters)"
+    return value
+
+
+def fit_result(result, limit: int | None = None) -> str:
+    """JSON text of a tool result, shortened to `limit` characters while keeping its shape."""
+    limit = limit or MAX_RESULT_CHARS
+    text = json.dumps(result, indent=1, ensure_ascii=False)
+    if len(text) <= limit:
+        return text
+    original = len(text)
+    for keep in (200, 100, 50, 20, 10, 5, 2, 1):
+        text = json.dumps(_shrink(result, keep), indent=1, ensure_ascii=False)
+        if len(text) <= limit:
+            break
+    if len(text) > limit:
+        text = text[:limit] + "\n..."
+    return (f"[Result shortened from {original} to {len(text)} characters. Ask for less (filters, limits, "
+            f"or doc_summary) to see everything.]\n" + text)
 
 INSTRUCTIONS = """You control Autodesk Civil 3D through these tools.
 - When the user says "use Civil 3D" (or starts asking for drawing work), call system_ping, then doc_info,
   and give a 2-3 line summary of the open drawing. If ping fails, ask them to open Civil 3D and a drawing.
+- On a large or unfamiliar drawing, call doc_summary before listing objects.
 - Coordinates are drawing units; points are [x, y] or [x, y, z].
 - Angles are DEGREES in dedicated tools, but RADIANS in props_set / props_call (raw API).
 - Every create tool returns a handle. Civil objects can also be referred to by NAME.
@@ -76,7 +109,8 @@ def build_tools() -> tuple[list[types.Tool], dict[str, str]]:
             schema["required"] = required
         n = mcp_name(name)
         lookup[n] = name
-        tools.append(types.Tool(name=n, description=desc, inputSchema=schema))
+        tools.append(types.Tool(name=n, description=desc, inputSchema=schema,
+                                annotations=types.ToolAnnotations(**hints(name))))
     return tools, lookup
 
 
@@ -104,7 +138,7 @@ async def call_tool(name: str, arguments: dict | None) -> list[types.TextContent
             result = await anyio.to_thread.run_sync(bridge.call, plugin_tool, args)
     except (bridge.Civil3DError, KeyError) as e:
         return [types.TextContent(type="text", text=f"ERROR: {e}")]
-    return [types.TextContent(type="text", text=json.dumps(result, indent=1, ensure_ascii=False))]
+    return [types.TextContent(type="text", text=fit_result(result))]
 
 
 async def main() -> None:

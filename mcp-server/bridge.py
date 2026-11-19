@@ -1,7 +1,8 @@
 """Sends one request to the Civil 3D plugin and waits for the reply.
 
 The plugin listens on 127.0.0.1:8765 (change with env var CIVIL3D_MCP_PORT).
-Protocol: one JSON object per line, both directions.
+Protocol: one JSON object per line, both directions. Every request carries the token that the plugin
+writes to %LOCALAPPDATA%\\Civil3DMcp\\token-<port> each time it starts; only this Windows user can read it.
 """
 from __future__ import annotations
 
@@ -9,6 +10,7 @@ import itertools
 import json
 import os
 import socket
+from pathlib import Path
 
 HOST = os.environ.get("CIVIL3D_MCP_HOST", "127.0.0.1")
 PORT = int(os.environ.get("CIVIL3D_MCP_PORT", "8765"))
@@ -21,8 +23,23 @@ class Civil3DError(RuntimeError):
     pass
 
 
+def token_file() -> Path:
+    if os.environ.get("CIVIL3D_MCP_TOKEN_FILE"):
+        return Path(os.environ["CIVIL3D_MCP_TOKEN_FILE"])
+    base = os.environ.get("LOCALAPPDATA") or str(Path.home() / "AppData" / "Local")
+    return Path(base) / "Civil3DMcp" / f"token-{PORT}"
+
+
+def read_token() -> str:
+    """Read on every call: Civil 3D makes a new token each time the plugin starts."""
+    try:
+        return token_file().read_text(encoding="ascii").strip()
+    except OSError:
+        return ""
+
+
 def call(tool: str, args: dict | None = None) -> object:
-    req = {"id": next(_ids), "tool": tool, "args": args or {}}
+    req = {"id": next(_ids), "token": read_token(), "tool": tool, "args": args or {}}
     try:
         with socket.create_connection((HOST, PORT), timeout=TIMEOUT) as s:
             s.sendall((json.dumps(req) + "\n").encode("utf-8"))

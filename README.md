@@ -1,7 +1,7 @@
 # Civil 3D MCP: control Autodesk Civil 3D with AI
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version 1.0.0](https://img.shields.io/badge/version-1.0.0-blue)](CHANGELOG.md)
+[![Version 1.1.0](https://img.shields.io/badge/version-1.1.0-blue)](CHANGELOG.md)
 ![Civil 3D 2025 | 2026](https://img.shields.io/badge/Civil%203D-2025%20%7C%202026-0696D7)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6)
 ![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB)
@@ -12,9 +12,9 @@
 > *"Import survey.csv, build an EG surface with 1 m contours, then give me the cut/fill volume against FG."*
 
 Civil 3D MCP connects AI assistants (**Claude Desktop**, **Claude Code**, Cline and other MCP clients) to Autodesk Civil 3D.
-It ships with **157 ready-made tools** for drafting, COGO points, surfaces, alignments, profiles, corridors, pipe networks and
-PDF plotting. For anything those tools don't cover, Claude can write and run C# code inside Civil 3D, starting from a
-library of tested templates.
+It ships with **181 ready-made tools** for drafting, COGO points, surfaces, alignments, profiles, corridors, sewer and
+water networks, hydrology, quantities and PDF plotting. For anything those tools don't cover, Claude can write and run C#
+code inside Civil 3D, starting from a library of tested templates.
 
 **Install in one message.** In Claude Code (or the **Code** tab of the Claude desktop app), send
 `Install this repo: https://github.com/ctrlxbruce/Autocad-Civil3D-MCP`. Then open Civil 3D and tell Claude
@@ -51,8 +51,13 @@ library of tested templates.
 | **COGO points** | Create, edit, **import CSV/TXT**, point groups, point styles, description keys |
 | **Surfaces** | TIN/grid surfaces, breaklines, boundaries, **contour styles and smoothing**, analysis, **cut/fill volumes** |
 | **Alignments and profiles** | Alignments from polylines or PIs (curves and spirals), offsets, EG profiles, FG profiles, profile views |
-| **Corridors and sections** | Assemblies, corridors, corridor surfaces, sample lines, section views, feature lines, sites |
-| **Pipe networks** | Networks, parts lists, structures, pipes, rules, network reports |
+| **Corridors and sections** | Assemblies with **stock subassemblies** (lanes, curbs, shoulders, daylight), corridors, corridor surfaces, sample lines, section views, feature lines, sites |
+| **Sewer and storm networks** | Networks, structures, pipes with inverts and slopes, rules, **Manning capacity / velocity / d/D, simplified HGL**, network QC (slope, cover, sumps) |
+| **Water supply (pressure) networks** | Parts lists, networks, pipes placed at a cover depth, fittings, valves and hydrants, **cover check** (see [Known limitations](#known-limitations)) |
+| **Hydrology** | **Rational method** runoff, **time of concentration** (Kirpich, California / IRC:SP:13, FAA), catchment area, low point, flow path |
+| **Quantities and cost** | Pipe lengths by size, structure and fitting counts, earthwork from volume surfaces, **BOQ with rates and CSV export** |
+| **Road checks** | Stopping sight distance, vertical curve **K values** and horizontal curve radii against a design speed (AASHTO or IRC) |
+| **Large drawings** | A short **drawing summary**, and long results are trimmed automatically so the chat stays readable |
 | **Anything else** | Claude writes C# that runs inside Civil 3D with the full .NET API |
 
 ---
@@ -62,7 +67,7 @@ library of tested templates.
 | You need | Notes |
 |---|---|
 | **Windows 10 or 11** (64-bit) | |
-| **Autodesk Civil 3D 2025 or 2026** | Full Civil 3D. Plain AutoCAD is not supported. Tested on Civil 3D 2025; 2026 is supported but not yet tested. |
+| **Autodesk Civil 3D 2025 or 2026** | Full Civil 3D. Plain AutoCAD is not supported. Tested on Civil 3D 2025; 2026 is supported but not yet tested. Civil 3D 2027 runs on .NET 10 and is not supported yet. |
 | **Python 3.10 or newer** | The installer finds it, even if it isn't on PATH. Don't have it? Get it from [python.org](https://www.python.org/downloads/) (tick **"Add python.exe to PATH"**) or run `winget install -e --id Python.Python.3.12`. |
 | **Claude** | [Claude Desktop](https://claude.ai/download) and/or Claude Code. Other MCP clients (Cline, Cursor ...) work with the [manual setup](#installation). |
 
@@ -182,6 +187,11 @@ Start simple, then build up. Claude picks the right tools by itself.
 | Road design | *"Make an alignment from the centerline polyline, then create its EG profile and a profile view."* |
 | Sections | *"Create sample lines every 20 m along the alignment and draw the section views."* |
 | Pipes | *"List every pipe in the Storm network with its length, size and slope."* |
+| Sewer design check | *"Check the Sanitary network with these peak flows in L/s: S-1 5, S-2 8. Flag velocities under 0.6 m/s."* |
+| Storm runoff | *"Peak runoff for the catchment inside this polyline, C 0.6, 50 mm/h. Then the time of concentration from a flow path."* |
+| Road check | *"Check the FG profile's vertical curves for 60 km/h with IRC values."* |
+| Bill of quantities | *"Make a BOQ: 200 mm PVC pipe at ₹850/m, manholes at ₹25,000 each, export to CSV."* |
+| Big drawing | *"Summarise this drawing first, then list the layers with the most objects."* |
 | Sheets | *"Plot the current layout to PDF."* |
 
 Coordinates and distances use your drawing's units.
@@ -195,8 +205,8 @@ Set the mode with `CIVIL3D_MCP_MODE` in the config from Step 3.
 
 | Mode | Tools | Tool-list size | Best for |
 |---|---|---|---|
-| `full` (default) | 157 | ~22,600 tokens | Everyday work. Claude picks a ready tool, so calls are short and rarely fail. |
-| `lean` | 32 | ~4,800 tokens | Common drafting tools, property tools, code execution and skills |
+| `full` (default) | 181 | ~25,600 tokens | Everyday work. Claude picks a ready tool, so calls are short and rarely fail. |
+| `lean` | 33 | ~4,900 tokens | Common drafting tools, property tools, drawing summary, code execution and skills |
 | `code` | 8 | ~1,000 tokens | Claude writes C# for everything, using the skills library |
 
 ---
@@ -211,6 +221,8 @@ Set the mode with `CIVIL3D_MCP_MODE` in the config from Step 3.
 | `MCPSTATUS` is an unknown command | The plugin isn't loaded. Close Civil 3D and run `install.bat` again. To load it once by hand, type `NETLOAD` and pick `%APPDATA%\Autodesk\ApplicationPlugins\Civil3DMcp.bundle\Contents\Civil3DMcp.dll`. |
 | The civil3d tools don't appear in Claude | Run `install.bat` again and read its summary. Then fully quit and reopen Claude Desktop, or start a new Claude Code session (`claude mcp list` should show `civil3d`). |
 | **"Civil 3D did not answer in time"** | A dialog box is probably open in Civil 3D. Close it and try again. |
+| **"Missing or wrong token"** | Happens right after updating from 1.0. Close Civil 3D, run `install.bat` again, then fully quit and reopen Claude Desktop (or start a new Claude Code session) and open Civil 3D. |
+| **"Blocked for safety"** | The command or code does something the plugin doesn't allow (see [Safety and privacy](#safety-and-privacy)). Do that step yourself in Civil 3D. |
 | Can't add pipes or structures | Set the pipe catalog for the drawing: **Home tab → Create Design → Pipe Network ▾ → Set Pipe Network Catalog** (or type `AECCSETNETWORKCATALOG`; for pressure networks `AECCSETPRESSURENETWORKCATALOG`). Folder for Civil 3D 2025: `C:\ProgramData\Autodesk\C3D 2025\enu\Pipes Catalog`; choose **Metric Pipes** and **Metric Structures** for metric drawings. If the parts list still has no sizes, start the drawing from `_Autodesk Civil 3D (Metric) NCS.dwt`. |
 | Something else | Open an [issue](https://github.com/ctrlxbruce/Autocad-Civil3D-MCP/issues) with the error message and your Civil 3D version. |
 
@@ -227,15 +239,26 @@ Set the mode with `CIVIL3D_MCP_MODE` in the config from Step 3.
 ## Safety and privacy
 
 - **Local only.** The plugin accepts connections only from your own computer (`127.0.0.1`). No other computer can connect to it.
+- **Secret token.** Each time Civil 3D starts, the plugin makes a new random token and saves it in
+  `%LOCALAPPDATA%\Civil3DMcp\`, which only your Windows user can read. A request without the right token is
+  refused, and anything that isn't a plain MCP request (for example a web page trying to reach the plugin through
+  your browser) closes the connection at once.
 - **Your AI service sees what Claude reads.** Drawing information that Claude looks at (names, coordinates, properties)
   becomes part of your chat with the AI service, just like anything else you type.
 - **No half-finished changes.** Every request runs in one transaction. If it fails, the drawing is left as it was.
   Read-only code (`code_query`) always rolls back.
-- **Code filter.** Before running C# code, the plugin rejects scripts that try to start programs, delete or move files,
-  use the network or registry, load other assemblies, close Civil 3D, or run unsafe code.
+- **Blocked commands.** `doc_run_command` refuses commands that start programs or open files outside Civil 3D
+  (`SHELL`, `START`, `BROWSER`…), load code (`NETLOAD`, `APPLOAD`, `SCRIPT`, VBA), close Civil 3D, and AutoLISP.
+  `doc_set_sysvar` can't change security settings such as `SECURELOAD` or `TRUSTEDPATHS`.
+- **Code check.** Before running C# code, the plugin checks every name the compiler resolves (not just the text) and
+  rejects scripts that start programs, write, move or delete files, use the network, registry or native code,
+  call methods through reflection or `dynamic`, send text to the command line, or close Civil 3D. Reading files and
+  all drawing work are allowed.
+- **Tool labels.** Every tool tells Claude whether it only reads, only adds new objects, or can change or delete
+  existing ones, so Claude Desktop and Claude Code can ask you before the risky ones.
 
 > [!WARNING]
-> The code filter is a text check, not a full sandbox. Use this only with drawings and AI clients you trust,
+> The code check is a safety net, not a full sandbox. Use this only with drawings and AI clients you trust,
 > **save your work often**, and keep backups of important drawings.
 
 ---
@@ -261,7 +284,7 @@ Set the mode with `CIVIL3D_MCP_MODE` in the config from Step 3.
 | Group | Tools | Examples |
 |---|---|---|
 | **Code and skills** | 5 | `code_execute` (changes the drawing), `code_query` (read-only), `skills_list`, `skills_search`, `skills_read` |
-| **Core and properties** | 17 | `doc_info`, `query_list`, `props_get` / `props_set` (any property of any object), `props_call` (any API method), `doc_run_command` |
+| **Core and properties** | 18 | `doc_info`, `doc_summary`, `query_list`, `props_get` / `props_set` (any property of any object), `props_call` (any API method), `doc_run_command` |
 | **Drafting** | 14 | Line, polyline, 3D polyline, rectangle, polygon, circle, arc, ellipse, spline, point, hatch, xline, ray, donut |
 | **Modify** | 12 | Move, copy, rotate, scale, mirror, offset, explode, join, rectangular and polar array, match properties, vertex edit |
 | **Layers** | 6 | Create and edit layers, set the current layer, delete, load linetypes |
@@ -271,8 +294,12 @@ Set the mode with `CIVIL3D_MCP_MODE` in the config from Step 3.
 | **COGO points** | 11 | Create, list, edit, delete, import CSV/TXT, elevations from surface, point groups, point styles, description keys |
 | **Surfaces** | 15 | TIN/grid, point groups, points, breaklines, contours, boundaries, DEM, `.tin` import, edit, contour style and smoothing, extract contours, analysis, cut/fill volume |
 | **Alignments and profiles** | 15 | From polyline or PIs (curves and spirals), offset, station/offset, equations, design speeds, EG profile, FG by PVIs, profile views |
-| **Corridors and sections** | 11 | Assembly, corridor, corridor surface, sample lines, section views, feature lines, sites, parcels |
-| **Pipes** | 9 | Parts lists, network, structures, pipes, connect, rules, report, pressure network info |
+| **Corridors and sections** | 15 | Assembly, stock subassemblies (list, add with hooks, parameters, info), corridor, corridor surface, sample lines, section views, feature lines, sites, parcels |
+| **Pipes** | 11 | Parts lists, network, structures, pipes, connect, rules, report, pressure network info, Manning hydraulics with HGL, network QC |
+| **Pressure networks** | 6 | Parts lists, network, pipes at a cover depth, fittings, appurtenances (valves, hydrants), cover check |
+| **Hydrology** | 5 | Rational method, time of concentration, catchment area, low point, flow path |
+| **Quantities and cost** | 3 | Pipe lengths and part counts, earthwork from volume surfaces, BOQ with CSV export |
+| **Road checks** | 3 | Stopping sight distance, vertical curve K values, horizontal curve radii (AASHTO or IRC) |
 | **Civil styles** | 8 | List Civil objects; list, create, get and set any style collection; display components |
 
 Every tool with its inputs: [`docs/tool-reference.md`](docs/tool-reference.md)
@@ -300,9 +327,17 @@ skills/
   and a parts list that has sizes. Drawings started from `_Autodesk Civil 3D (Metric) NCS.dwt` come with ready
   "Storm Sewer" and "Sanitary Sewer" parts lists. Adding sizes to an empty parts list through the Civil 3D 2025 API
   does not work, so start pipe work from that template (or one of your own with filled parts lists).
-- **Not built in as tools yet:** survey database, creating pressure networks, adding subassemblies to assemblies,
-  superelevation, QTO reports, LandXML import/export, and creating parcels from objects.
-  Claude can still try these through code execution or Civil 3D commands.
+- **Pressure networks** need a pressure parts list with parts. The Metric NCS template's "Water" and "Standard"
+  lists are empty, and the API can't add catalog parts to a list, so build one in Civil 3D first (Toolspace →
+  Settings → Pressure Network → Parts Lists). On our test PC (Civil 3D 2025.0.1, stock metric catalogs) Civil 3D
+  then refused to add pressure pipes, fittings and valves, through the API **and** in its own Pressure Network
+  Creation Tools, so adding pressure parts is untested. The tool explains this when it happens. `pressure_check_cover`
+  and the quantity tools work on pressure networks drawn in Civil 3D. Updating Civil 3D may fix it.
+- **Hydraulics and road checks** use common textbook formulas (Manning, Rational, Kirpich, AASHTO / IRC sight
+  distance). Default criteria follow common practice (for example CPHEEO self-cleansing velocity 0.6 m/s); set the
+  values from your own design standard and check the results.
+- **Not built in as tools yet:** survey database, superelevation, Civil 3D's QTO Manager reports, LandXML
+  import/export, and creating parcels from objects. Claude can still try these through code execution or Civil 3D commands.
 
 **Test status (Civil 3D 2025, Metric):** the plugin was built from source and tested live in a blank drawing with
 143 tool calls covering every group: drafting, modify, annotation, all 9 dimension types, blocks, layouts and PDF
@@ -312,7 +347,12 @@ All 143 succeeded, and the code safety filter blocked a file-delete script as in
 tested in a drawing from the Metric NCS template: a network with a reference surface, manholes with rims from the
 surface, PVC pipes with inverts and falling slopes, connections, design rules and the network report. The one-step
 installer was tested on a real PC with Claude Desktop and Claude Code.
-Not yet tested: pressure networks, xrefs and DWG import, and Civil 3D 2026.
+
+Version 1.1.0 added 24 tools, tested live the same way (47 checks, all passed): sewer hydraulics and QC (a 200 mm
+PVC pipe at 1 % gives 32.8 L/s full, as by hand), Rational runoff, time of concentration, catchment area, low point
+and flow path, stock subassemblies hooked into a corridor, earthwork, pipe lengths and a BOQ with CSV, stopping
+sight distance, K values and curve radii (AASHTO and IRC), a decimal-comma point file, and the drawing summary.
+Not yet tested: adding pressure parts (see above), xrefs and DWG import, and Civil 3D 2026.
 
 ---
 
@@ -324,7 +364,7 @@ Not yet tested: pressure networks, xrefs and DWG import, and Civil 3D 2026.
 ```
 ┌──────────────────────┐   stdio   ┌───────────────────────────┐  TCP / JSON lines  ┌──────────────────────────────┐
 │  AI Assistant        │ ────────▶ │  MCP Server (Python)      │ ─────────────────▶ │  Civil 3D Plugin (.NET 8)    │
-│  Claude Desktop,     │ ◀──────── │  157 tools · 3 modes      │ ◀───────────────── │  152 handlers + Roslyn engine │
+│  Claude Desktop,     │ ◀──────── │  181 tools · 3 modes      │ ◀───────────────── │  176 handlers + Roslyn engine │
 │  Claude Code, Cline  │           │  127.0.0.1:8765           │                    │  runs on Civil 3D main thread │
 └──────────────────────┘           └─────────────┬─────────────┘                    └──────────────┬───────────────┘
                                                  │                                                 │
@@ -412,6 +452,8 @@ DatabaseServices, Geometry, EditorInput, Colors), `Autodesk.Civil`, `Autodesk.Ci
 | `CIVIL3D_MCP_PORT` | `8765` | Plugin port. The plugin's own port is set in `PluginEntry.cs`, so changing it means rebuilding. |
 | `CIVIL3D_MCP_TIMEOUT` | `300` | Seconds to wait for Civil 3D |
 | `CIVIL3D_SKILLS_DIR` | `../skills` | Folder with `.skill.md` templates |
+| `CIVIL3D_MCP_TOKEN_FILE` | `%LOCALAPPDATA%\Civil3DMcp\token-8765` | Where the MCP server reads the plugin's token |
+| `CIVIL3D_MCP_ALLOW_LISP` | *(unset)* | Set to `1` **for Civil 3D itself** (not the MCP server) to let `doc_run_command` send AutoLISP |
 
 </details>
 

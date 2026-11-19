@@ -15,7 +15,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(ROOT))
 
-from tools import LOCAL, all_tools  # noqa: E402
+from tools import ADDITIVE, LOCAL, READ_ONLY, all_tools, hints  # noqa: E402
 
 
 def cs_tools() -> set:
@@ -53,9 +53,31 @@ def fake_plugin(port, seen):
     threading.Thread(target=loop, daemon=True).start()
 
 
+def test_annotations():
+    names = set(all_tools())
+    assert READ_ONLY <= names, f"unknown READ_ONLY names: {sorted(READ_ONLY - names)}"
+    assert ADDITIVE <= names, f"unknown ADDITIVE names: {sorted(ADDITIVE - names)}"
+    assert not READ_ONLY & ADDITIVE
+    assert hints("system.ping") == {"readOnlyHint": True, "openWorldHint": False}
+    assert hints("drafting.line")["destructiveHint"] is False
+    for n in ("entity.delete", "layers.delete", "code.execute", "doc.run_command", "doc.save", "props.set"):
+        assert hints(n)["destructiveHint"] is True, n
+    assert "openWorldHint" not in hints("code.execute")
+
+
 def test_modes():
     assert len(all_tools("code")) == 8
     assert len(all_tools("code")) < len(all_tools("lean")) < len(all_tools("full"))
+
+
+def test_result_trimming():
+    import server
+    small = {"a": [1, 2, 3]}
+    assert server.fit_result(small, 1000) == json.dumps(small, indent=1)
+    big = {"items": [{"i": i, "text": "x" * 40} for i in range(5000)], "name": "big"}
+    text = server.fit_result(big, 5000)
+    assert len(text) < 5300 and "_summarized" in text and "Result shortened" in text
+    assert '"name": "big"' in text          # the shape (other keys) is kept
 
 
 def test_end_to_end():
@@ -63,19 +85,26 @@ def test_end_to_end():
     from mcp import ClientSession, StdioServerParameters
     from mcp.client.stdio import stdio_client
 
+    import tempfile
     port = 18765
     seen = []
     fake_plugin(port, seen)
+    token_file = Path(tempfile.mkdtemp()) / f"token-{port}"
+    token_file.write_text("ABC123", encoding="ascii")      # what the plugin writes when it starts
 
     async def run():
         params = StdioServerParameters(command=sys.executable, args=[str(ROOT / "server.py")],
-                                       env={**os.environ, "CIVIL3D_MCP_PORT": str(port)})
+                                       env={**os.environ, "CIVIL3D_MCP_PORT": str(port),
+                                            "CIVIL3D_MCP_TOKEN_FILE": str(token_file)})
         async with stdio_client(params) as (r, w):
             async with ClientSession(r, w) as s:
                 await s.initialize()
                 tools = (await s.list_tools()).tools
                 assert len(tools) == len(all_tools())
                 assert all(re.fullmatch(r"[a-zA-Z0-9_-]{1,64}", t.name) for t in tools)
+                by_name = {t.name: t for t in tools}
+                assert by_name["system_ping"].annotations.readOnlyHint is True
+                assert by_name["entity_delete"].annotations.destructiveHint is True
                 res = await s.call_tool("drafting_line", {"start": [0, 0], "end": [10, 5], "layer": "C-ROAD"})
                 return len(tools), res.content[0].text
 
@@ -86,11 +115,14 @@ def test_end_to_end():
     assert '"2A3"' in text
     assert seen[-1]["tool"] == "drafting.line"
     assert seen[-1]["args"]["layer"] == "C-ROAD"
+    assert seen[-1]["token"] == "ABC123"              # every request carries the plugin's token
     return n
 
 
 if __name__ == "__main__":
     test_catalogue_matches_plugin()
+    test_annotations()
     test_modes()
+    test_result_trimming()
     n = test_end_to_end()
     print(f"OK: {n} tools, catalogue matches plugin, end-to-end call works.")

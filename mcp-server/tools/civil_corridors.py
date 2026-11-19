@@ -1,5 +1,5 @@
 TOOLS = {
-    "assembly.create": ("Create an (empty) assembly baseline marker. Add subassemblies from Tool Palettes or props_call.",
+    "assembly.create": ("Create an (empty) assembly baseline marker. Add subassemblies with assembly_add_subassembly.",
                         {"name": ("string", "", True), "position": ("point", "", True), "type": ("string", "UndividedCrownedRoad (default) | UndividedPlanarRoad | DividedCrownedRoad | DividedPlanarRoad | Railway | Other")}),
     "corridor.create": ("Create a corridor from alignment + profile + assembly and build it.",
                         {"name": ("string", ""), "alignment": ("string", "", True), "profile": ("string", "", True),
@@ -25,6 +25,21 @@ TOOLS = {
     "featureline.set_elevations": ("Set feature line elevations from surface, raise, or per point.",
                                    {"featureline": ("string", "", True), "surface": ("string", ""), "raise": ("number", ""),
                                     "point_elevations": ("numbers", ""), "insert_intermediate": ("boolean", "")}),
+    "assembly.list_stock": ("Common Civil 3D stock subassembly types by category (lanes, curbs, shoulders, daylight, ditches ...).",
+                            {"category": ("string", "e.g. Basic, Lanes, Daylight")}),
+    "assembly.add_subassembly": ("Add a stock subassembly to an assembly, on the left, right or both sides, optionally hooked to a "
+                                 "point of another subassembly (e.g. a curb on the lane edge). Returns the created names.",
+                                 {"assembly": ("string", "", True),
+                                  "type": ("string", "Stock class from assembly_list_stock, e.g. BasicLane", True),
+                                  "side": ("string", "Left | Right (default) | Both"),
+                                  "params": ("object", "Parameter values by name, e.g. {\"Width\": 3.5, \"Default Slope\": -2}"),
+                                  "hook_to": ("string", "Name of a subassembly in this assembly to attach to"),
+                                  "hook_point_code": ("string", "Point code on hook_to, e.g. ETW (default: its first point)"),
+                                  "name": ("string", "Base name (side is appended)")}),
+    "assembly.subassembly_params": ("Parameter names, types and values of a subassembly, plus its point codes (for hooking).",
+                                    {"subassembly": ("string", "Name or handle", True)}),
+    "assembly.info": ("An assembly's subassemblies with side and what each is hooked to.",
+                      {"assembly": ("string", "", True)}),
     "site.create": ("Create a site.", {"name": ("string", "", True)}),
     "parcels.list": ("List parcels in a site with area and perimeter. To CREATE parcels from polylines use "
                      "doc_run_command \"_CreateParcelFromObjects\" (Civil 3D only offers this in the UI).",

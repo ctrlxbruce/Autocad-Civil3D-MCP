@@ -49,6 +49,7 @@ namespace Civil3DMcp.Handlers
             (new Regex(@"\bAssembly\s*\.\s*(Load|LoadFrom|LoadFile|UnsafeLoadFrom)\b|AssemblyLoadContext"), "loading assemblies"),
             (new Regex(@"\bEnvironment\s*\.\s*(Exit|FailFast)\b|Application\s*\.\s*Quit\b"), "closing Civil 3D"),
             (new Regex(@"\bMarshal\s*\.|\bunsafe\b|DllImport"), "unsafe/native code"),
+            (new Regex(@"(?i)\b(" + string.Join("|", Security.BlockedSysvarNames) + @")\b"), "changing Civil 3D's code-loading security"),
         };
 
         const string Usings = @"using System; using System.Linq; using System.Collections.Generic; using System.Text;
@@ -121,6 +122,7 @@ using Application = Autodesk.AutoCAD.ApplicationServices.Application;
                     .Select(d => { var l = d.Location.GetMappedLineSpan(); return $"line {l.StartLinePosition.Line + 1}: {d.Id} {d.GetMessage()}"; });
                 throw new ArgumentException("C# compile errors:\n" + string.Join("\n", errs));
             }
+            ScriptGuard.Check(comp, tree);
             ms.Position = 0;
             var alc = new AssemblyLoadContext("C3DScript", isCollectible: true);
             try

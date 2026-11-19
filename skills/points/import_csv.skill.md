@@ -23,6 +23,6 @@ string path = (string)Inputs["path"];
 string fmtName = Inputs.ContainsKey("format") ? (string)Inputs["format"] : "PNEZD (comma delimited)";
 var fmts = PointFileFormatCollection.GetPointFileFormats(Database);
 var fmt = fmts[fmtName];
-uint n = CivilDoc.CogoPoints.ImportPoints(path, fmt);
+uint n = CogoPointCollection.ImportPoints(path, fmt);   // static: imports into the active drawing
 return new { imported = n, total = CivilDoc.CogoPoints.Count };
 ```

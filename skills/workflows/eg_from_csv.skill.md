@@ -21,7 +21,7 @@ Example inputs:
 ```csharp
 // 1) import
 var fmt = PointFileFormatCollection.GetPointFileFormats(Database)[(string)(Inputs.ContainsKey("format") ? Inputs["format"] : "PNEZD (comma delimited)")];
-uint n = CivilDoc.CogoPoints.ImportPoints((string)Inputs["path"], fmt);
+uint n = CogoPointCollection.ImportPoints((string)Inputs["path"], fmt);   // static: imports into the active drawing
 // 2) group with all points
 var groups = CivilDoc.PointGroups;
 ObjectId gid = groups.Contains("SURVEY") ? groups["SURVEY"] : groups.Add("SURVEY");

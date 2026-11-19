@@ -51,7 +51,7 @@ namespace Civil3DMcp
                     var tool = step["tool"]?.ToString();
                     var args = Substitute(step["args"]?.DeepClone() ?? new JsonObject(), saved);
                     var sw = Stopwatch.StartNew();
-                    writer.WriteLine(new JsonObject { ["id"] = ++id, ["tool"] = tool, ["args"] = args }.ToJsonString());
+                    writer.WriteLine(new JsonObject { ["id"] = ++id, ["token"] = Security.Token, ["tool"] = tool, ["args"] = args }.ToJsonString());
                     var replyText = reader.ReadLine();
                     sw.Stop();
                     var reply = JsonNode.Parse(replyText).AsObject();

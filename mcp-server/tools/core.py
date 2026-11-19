@@ -6,12 +6,17 @@ TOOLS = {
         "FALLBACK for anything without a dedicated tool: send text to the Civil 3D command line exactly as typed. "
         "Use '-' command versions to avoid dialogs (e.g. '-LAYER', '-PLOT'). Separate inputs with spaces or \\n. "
         "Civil 3D command names usually start with Aecc (e.g. '_AeccLandXMLIn', '_AeccSetNetworkCatalog'). "
-        "Examples: 'FILLET R 2 ', '_TRIM', 'REVCLOUD', '_AeccLandXMLIn'.",
+        "Examples: 'FILLET R 2 ', '_TRIM', 'REVCLOUD', '_AeccLandXMLIn'. "
+        "Blocked for safety: AutoLISP, and commands that start programs, load code (NETLOAD, SCRIPT, VBA) or quit.",
         {"command": ("string", "Command text", True)}),
     "doc.get_sysvar": ("Read a system variable (e.g. DIMSCALE, LTSCALE, PDMODE).", {"name": ("string", "Variable name", True)}),
-    "doc.set_sysvar": ("Set a system variable.", {"name": ("string", "Variable name", True), "value": ("string", "New value", True)}),
+    "doc.set_sysvar": ("Set a system variable. Security variables (SECURELOAD, TRUSTEDPATHS...) can't be changed.", {"name": ("string", "Variable name", True), "value": ("string", "New value", True)}),
     "doc.zoom_extents": ("Zoom to extents.", {}),
-    "doc.save": ("Save the drawing (QSAVE) or Save As when path is given.", {"path": ("string", "Optional .dwg path")}),
+    "doc.summary": ("Short, size-capped picture of a drawing (good first call on large drawings): object counts by type and "
+                    "layer, extents, a spatial grid of where objects are, Civil 3D object counts, xrefs and layouts.",
+                    {"top": ("integer", "How many types / layers to list (default 15)"),
+                     "grid": ("integer", "Spatial grid size, default 4")}),
+    "doc.save": ("Save the drawing (QSAVE) or Save As when path is given.", {"path": ("string", "Optional full path ending in .dwg (no quotes)")}),
     "query.list": ("List objects in the current space with handle, type, layer and name. Filter by type (Line, Polyline, "
                    "Circle, TinSurface, Alignment, CogoPoint, ...) and/or layer.",
                    {"type": ("string", "Class name filter"), "layer": ("string", "Layer filter"), "limit": ("integer", "Max items (default 200)")}),

@@ -10,9 +10,11 @@ TOOLS = {
                     {"handles": ("strings", "Point handles"), "numbers": ("numbers", "Or point numbers"), "props": ("object", "Properties", True)}),
     "points.delete": ("Delete COGO points by number.", {"numbers": ("numbers", "Point numbers", True)}),
     "points.list_file_formats": ("List point file formats available for import (PNEZD, PENZD, ...).", {}),
-    "points.import": ("Import COGO points from a CSV/TXT file, optionally into a new point group.",
+    "points.import": ("Import COGO points from a CSV/TXT file, optionally into a new point group. Files that write numbers "
+                      "with a decimal comma (1234,56) and separate fields with ; tab or space are converted automatically.",
                       {"path": ("string", "File path", True), "format": ("string", "e.g. 'PNEZD (comma delimited)'"),
-                       "add_to_group": ("string", "Create a point group with the imported points")}),
+                       "add_to_group": ("string", "Create a point group with the imported points"),
+                       "decimal_comma": ("string", "auto (default) | false")}),
     "points.elevations_from_surface": ("Set COGO point elevations from a surface.",
                                        {"surface": ("string", "Surface name/handle", True), "numbers": ("numbers", "Only these points")}),
     "points.description_keys": ("List description key sets and keys.", {}),

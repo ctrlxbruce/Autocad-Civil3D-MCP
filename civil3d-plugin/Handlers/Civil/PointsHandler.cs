@@ -111,26 +111,99 @@ namespace Civil3DMcp.Handlers
             return names;
         }
 
-        /// <summary>Import a CSV/TXT point file. format e.g. "PNEZD (comma delimited)", "PENZD (space delimited)".</summary>
+        /// <summary>
+        /// Import a CSV/TXT point file. format e.g. "PNEZD (comma delimited)", "PENZD (space delimited)".
+        /// Files that write numbers with a decimal comma (1234,56) and use ; tab or space between fields are
+        /// converted to a temporary comma-delimited copy first (decimal_comma: auto | true | false).
+        /// </summary>
         [Tool("points.import")]
         public static object Import(Args a, Ctx c)
         {
-            var fmts = Reflect.CallStatic(Reflect.T("PointFileFormatCollection"), "GetPointFileFormats", c.Db);
-            var fmt = Reflect.Index(fmts, a.Str("format", "PNEZD (comma delimited)"));
-            if (fmt is ObjectId fid) fmt = c.Open(fid);
-            var cpc = Reflect.T("CogoPointCollection");
-            object count;
-            if (a.Has("add_to_group"))
+            var path = a.NeedStr("path");
+            var formatName = a.Str("format", "PNEZD (comma delimited)");
+            var mode = a.Str("decimal_comma", "auto").ToLowerInvariant();
+            string temp = null, note = null;
+            if (mode != "false" && mode != "no")
             {
-                var groups = Reflect.Get(c.Civ, "PointGroups");
-                var gname = a.Str("add_to_group");
-                ObjectId gid;
-                try { gid = (ObjectId)Reflect.Index(groups, gname); } catch { gid = (ObjectId)Reflect.Call(groups, "Add", gname); }
-                count = Reflect.CallStatic(cpc, "ImportPoints", a.NeedStr("path"), fmt, gid);
-                try { Reflect.Call(c.Open(gid, true), "Update"); } catch { }
+                var copy = DecimalCommaCopy(path, formatName, out int converted);
+                if (copy != null)
+                {
+                    temp = copy.Value.path;
+                    formatName = copy.Value.format;
+                    note = $"{converted} lines used a decimal comma; imported from a converted comma-delimited copy.";
+                }
             }
-            else count = Reflect.CallStatic(cpc, "ImportPoints", a.NeedStr("path"), fmt);
-            return new { imported = Conv.Plain(count), group = a.Str("add_to_group") };
+            try
+            {
+                var fmts = Reflect.CallStatic(Reflect.T("PointFileFormatCollection"), "GetPointFileFormats", c.Db);
+                var fmt = Reflect.Index(fmts, formatName);
+                if (fmt is ObjectId fid) fmt = c.Open(fid);
+                var cpc = Reflect.T("CogoPointCollection");
+                object count;
+                if (a.Has("add_to_group"))
+                {
+                    var groups = Reflect.Get(c.Civ, "PointGroups");
+                    var gname = a.Str("add_to_group");
+                    ObjectId gid;
+                    try { gid = (ObjectId)Reflect.Index(groups, gname); } catch { gid = (ObjectId)Reflect.Call(groups, "Add", gname); }
+                    count = Reflect.CallStatic(cpc, "ImportPoints", temp ?? path, fmt, gid);
+                    try { Reflect.Call(c.Open(gid, true), "Update"); } catch { }
+                }
+                else count = Reflect.CallStatic(cpc, "ImportPoints", temp ?? path, fmt);
+                return new { imported = Conv.Plain(count), group = a.Str("add_to_group"), format = formatName, note };
+            }
+            finally
+            {
+                if (temp != null) try { System.IO.File.Delete(temp); } catch { }
+            }
+        }
+
+        static readonly System.Text.RegularExpressions.Regex CommaNumber =
+            new System.Text.RegularExpressions.Regex(@"^[+-]?(\d{1,3}(\.\d{3})+|\d+),\d+$");
+
+        // Returns a converted temp copy and its comma-delimited format name, or null when no conversion is needed.
+        static (string path, string format)? DecimalCommaCopy(string path, string format, out int convertedLines)
+        {
+            convertedLines = 0;
+            var lines = System.IO.File.ReadAllLines(path);
+            var first = lines.FirstOrDefault(l => l.Trim().Length > 0);
+            if (first == null) return null;
+            char delim = first.Contains(';') ? ';' : first.Contains('\t') ? '\t' : first.Contains(',') ? ',' : ' ';
+            if (delim == ',') return null;   // a comma-delimited file can't also use decimal commas
+            var order = new string(format.TakeWhile(ch => !char.IsWhiteSpace(ch) && ch != '(').ToArray()).ToUpperInvariant();
+            bool Numeric(int i) => i < order.Length && "NEZXY".IndexOf(order[i]) >= 0;
+            string[] Split(string l) => delim == ' ' ? l.Split((char[])null, StringSplitOptions.RemoveEmptyEntries) : l.Split(delim);
+
+            bool needed = lines.Any(l => Split(l).Select((t, i) => Numeric(i) && CommaNumber.IsMatch(t.Trim())).Any(x => x));
+            if (!needed) return null;
+
+            var output = new List<string>();
+            int lineNo = 0;
+            foreach (var raw in lines)
+            {
+                lineNo++;
+                if (raw.Trim().Length == 0) continue;
+                var tokens = Split(raw);
+                bool changed = false;
+                for (int i = 0; i < tokens.Length; i++)
+                {
+                    var t = tokens[i].Trim();
+                    if (Numeric(i))
+                    {
+                        if (CommaNumber.IsMatch(t)) { t = t.Replace(".", "").Replace(',', '.'); changed = true; }
+                        if (t.Length > 0 && !double.TryParse(t, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out _))
+                            throw new ArgumentException($"Line {lineNo}: '{tokens[i].Trim()}' is not a number (field {order[i]}).");
+                    }
+                    else t = t.Replace(',', ' ');   // keep descriptions from adding columns
+                    tokens[i] = t;
+                }
+                if (changed) convertedLines++;
+                output.Add(string.Join(",", tokens));
+            }
+            var temp = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"civil3d-mcp-points-{Guid.NewGuid():N}.csv");
+            System.IO.File.WriteAllLines(temp, output);
+            var commaFormat = System.Text.RegularExpressions.Regex.Replace(format, @"\(\s*\w+\s+delimited\s*\)", "(comma delimited)");
+            return (temp, commaFormat);
         }
 
         [Tool("points.elevations_from_surface")]

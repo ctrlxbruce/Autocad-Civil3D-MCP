@@ -38,7 +38,7 @@ namespace Civil3DMcp
         {
             if (string.IsNullOrEmpty(tool)) return Fail("Missing 'tool'.");
             if (tool == "system.ping")
-                return Ok(new { pong = true, tools = Count, version = "1.0.0" });
+                return Ok(new { pong = true, tools = Count, version = "1.1.0" });
             if (tool == "system.list_tools")
                 return Ok(Tools.Keys.OrderBy(k => k).ToList());
 

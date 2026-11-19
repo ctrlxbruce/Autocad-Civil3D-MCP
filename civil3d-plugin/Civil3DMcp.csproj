@@ -12,6 +12,7 @@
     <Nullable>disable</Nullable>
     <LangVersion>latest</LangVersion>
     <AssemblyName>Civil3DMcp</AssemblyName>
+    <Version>1.1.0</Version>
     <RootNamespace>Civil3DMcp</RootNamespace>
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
@@ -36,6 +37,7 @@
     <Reference Include="acmgd"><HintPath>$(AcadDir)\acmgd.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="AecBaseMgd"><HintPath>$(AcadDir)\ACA\AecBaseMgd.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="AeccDbMgd"><HintPath>$(AcadDir)\C3D\AeccDbMgd.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="AeccPressurePipesMgd"><HintPath>$(AcadDir)\C3D\AeccPressurePipesMgd.dll</HintPath><Private>false</Private></Reference>
     <!-- Roslyn compiler shipped with AutoCAD (used by code.execute / code.query) -->
     <Reference Include="Microsoft.CodeAnalysis"><HintPath>$(AcadDir)\Microsoft.CodeAnalysis.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="Microsoft.CodeAnalysis.CSharp"><HintPath>$(AcadDir)\Microsoft.CodeAnalysis.CSharp.dll</HintPath><Private>false</Private></Reference>

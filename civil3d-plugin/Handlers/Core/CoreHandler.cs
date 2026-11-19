@@ -105,6 +105,9 @@ namespace Civil3DMcp.Handlers
         public static object SetVar(Args a, Ctx c)
         {
             var name = a.NeedStr("name");
+            if (Security.IsBlockedSysvar(name))
+                throw new InvalidOperationException(
+                    $"Blocked for safety: {name.ToUpperInvariant()} controls which code Civil 3D trusts; change it yourself in Civil 3D (OPTIONS).");
             var cur = Application.GetSystemVariable(name);
             var val = Conv.To(a.Node("value"), cur?.GetType() ?? typeof(string), c);
             Application.SetSystemVariable(name, val);
@@ -120,6 +123,7 @@ namespace Civil3DMcp.Handlers
         public static object Run(Args a, Ctx c)
         {
             var cmd = a.NeedStr("command");
+            Security.CheckCommand(cmd);
             if (!cmd.EndsWith("\n") && !cmd.EndsWith(" ")) cmd += "\n";
             c.Doc.SendStringToExecute(cmd, true, false, true);
             return new { queued = cmd.Trim() };
@@ -135,7 +139,12 @@ namespace Civil3DMcp.Handlers
         [Tool("doc.save")]
         public static object Save(Args a, Ctx c)
         {
-            c.Doc.SendStringToExecute(a.Has("path") ? $"_.SAVEAS  \"{a.Str("path")}\"\n" : "_.QSAVE\n", true, false, false);
+            var path = a.Has("path") ? a.Str("path") : null;
+            // The path goes to the command line inside quotes, so a quote or line break in it would start a new command.
+            if (path != null && (path.IndexOfAny(new[] { '"', '\r', '\n', '\t' }) >= 0 || path.Any(char.IsControl)
+                                 || !path.EndsWith(".dwg", StringComparison.OrdinalIgnoreCase)))
+                throw new ArgumentException("path must be a .dwg file path without quotes or line breaks.");
+            c.Doc.SendStringToExecute(path != null ? $"_.SAVEAS  \"{path}\"\n" : "_.QSAVE\n", true, false, false);
             return new { queued = true };
         }
 

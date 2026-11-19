@@ -1,5 +1,92 @@
 # Changelog
 
+## 1.1.0 (2026-11-19)
+
+24 new tools (181 in total) and a security fix. Several ideas came from [Jjo37/new-acad](https://github.com/Jjo37/new-acad) (MIT).
+
+**After updating:** close Civil 3D, run `install.bat` again, then fully quit and reopen Claude Desktop (or start a new
+Claude Code session). An older MCP server can't talk to the new plugin ("Missing or wrong token").
+
+### Security
+
+Please update. In 1.0.0 a web page open in your browser could send commands to the plugin while Civil 3D was
+running, and through `doc_run_command` start programs on your PC.
+
+- **Secret token on every request.** The plugin makes a new random token each time it starts and saves it where only
+  your Windows user can read it (`%LOCALAPPDATA%\Civil3DMcp\`). The MCP server sends it with every call. A request
+  without it is refused, and a connection that doesn't start with a plain MCP request (such as a browser's HTTP
+  request) is closed at once.
+- **`doc_run_command`** refuses commands that start programs or open outside files (`SHELL`, `START`, `BROWSER`…),
+  load code (`NETLOAD`, `APPLOAD`, `SCRIPT`, VBA), and `QUIT`. AutoLISP is refused unless Civil 3D is started with
+  `CIVIL3D_MCP_ALLOW_LISP=1`.
+- **`doc_set_sysvar`** can't change security settings (`SECURELOAD`, `TRUSTEDPATHS`, `TRUSTEDDOMAINS`…).
+- **`doc_save`** only accepts a plain `.dwg` path. A path with quotes or line breaks could add commands.
+- **Code check** now reads the names the C# compiler resolves, not just the text, so aliases and reflection no
+  longer get around it. Scripts can't start programs, write, move or delete files, use the network, registry or
+  native code, call methods through reflection or `dynamic`, send text to the command line, or reach the plugin's
+  own classes. Reading files and all drawing work still work.
+- **Tool labels**: every tool is marked read-only (58), adds objects only (78) or can change or delete existing
+  objects (45), so Claude Desktop and Claude Code can ask before the risky ones.
+
+### New
+
+- **Sewer and storm design checks**: `pipes_hydraulics` (Manning full-flow capacity, velocity, normal depth and
+  d/D for each pipe from design flows in L/s, plus a simplified hydraulic grade line and manhole freeboard) and
+  `pipes_qc` (cover to the pipe's outer top, minimum and maximum slope, unconnected pipe ends, sumps above the
+  lowest invert, rims that don't match the ground).
+- **Hydrology**: `hydrology_rational` (Q = C·i·A, weighted C, areas or a boundary), `hydrology_time_of_concentration`
+  (Kirpich, California / IRC:SP:13, FAA), `hydrology_catchment_area`, `hydrology_low_point`, `hydrology_flow_path`
+  (water-drop path on a surface).
+- **Pressure (water) networks**: `pressure_parts_lists`, `pressure_network_create`, `pressure_add_pipe` (depth
+  from cover), `pressure_add_fitting`, `pressure_add_appurtenance`, `pressure_check_cover`. See the limitation below.
+- **Stock subassemblies**: `assembly_list_stock`, `assembly_add_subassembly` (left, right or both sides, with
+  parameters, hooked to another subassembly's point code such as ETW), `assembly_subassembly_params`,
+  `assembly_info`. Corridors now get real cross sections.
+- **Quantities and cost**: `qty_pipe_lengths` (pipe lengths by size and part counts, gravity and pressure),
+  `qty_earthwork` (cut and fill of every volume surface), `qty_cost_estimate` (your own items and rates per part
+  name applied to the pipe networks, optional CSV).
+- **Road checks**: `qc_stopping_distance` (AASHTO or IRC), `qc_profile_k_values` (vertical curve K and length
+  against the minimum for the design speed), `qc_alignment` (curve radii against the minimum for the speed).
+- **`doc_summary`**: a short overview of a large drawing (object types, layers, extents, where things are,
+  Civil objects, xrefs, layouts), so Claude doesn't have to list everything.
+- **Big results are trimmed**: replies over 60,000 characters are shortened (long lists cut, with a note saying
+  how many items were left out) instead of filling Claude's context. Set `CIVIL3D_MCP_MAX_RESULT_CHARS` to change it.
+- `points_import` reads files that use a decimal comma (`1234,56`), detecting it automatically, and names the
+  line when a value isn't a number.
+
+### Fixed
+
+- Pressure networks were never found by name: the lookup called an extension method as if it were an instance
+  method. Every tool that takes a network name now finds pressure networks.
+- `corridor_create` without a start and end ran past the end of the profile, where the corridor dropped to
+  elevation 0 and inflated cut volumes. It now defaults to the stations the alignment and profile both cover.
+- `corridor_add_surface` returned an empty surface; it now rebuilds the surface and reports its point count, or
+  a warning when it has no points.
+- The `import_csv` and `eg_from_csv` skill templates didn't compile: they called `ImportPoints` on the drawing's
+  point collection, but in Civil 3D 2025 it is a static method (`CogoPointCollection.ImportPoints`).
+- The plugin package declares Civil 3D 2025 and 2026 only. Civil 3D 2027 runs on .NET 10 and would fail to load
+  this .NET 8 build.
+
+### Known limitation
+
+On Civil 3D 2025.0.1 with the stock metric pressure catalogs, Civil 3D refuses to add pressure pipes, fittings
+and appurtenances, both through the API and in its own Pressure Network Creation Tools. The pressure tools now
+explain this and suggest what to try (update Civil 3D, another pressure catalog). `pressure_check_cover`,
+`pressure_network_info` and `qty_pipe_lengths` work on pressure networks drawn in Civil 3D.
+
+### Tested
+
+Civil 3D 2025 (Metric), blank drawing from the NCS template: 47 live checks of the new tools, all passed (for
+example a 200 mm pipe at 1 % carries 32.8 L/s full, matching Manning by hand). Adding pressure parts could not be
+tested (above); Civil 3D 2026 is not tested yet.
+
+Security, live on Civil 3D 2025: 66 checks, all passed. A browser-style HTTP request, a request without a token and
+one with a wrong token are refused; 8 dangerous commands (shell, LISP, NETLOAD, VBA, QUIT…) and 2 security
+variables are blocked while normal commands and variables still work; a `doc_save` path with a line break is
+refused; 18 unsafe scripts are refused (programs,
+file writes, reflection, `dynamic`, network, registry, command line, the plugin's own classes) while 9 normal ones
+run; all 18 skill templates compile and pass the code check.
+
 ## 1.0.0 (2026-11-14)
 
 First public release.

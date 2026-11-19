@@ -35,7 +35,16 @@ The user watches Civil 3D next to this chat, so every change shows up in their d
 - Pipe networks: create the network with a reference `surface` so rims follow the ground, use a parts list with
   sizes (drawings from the `_Autodesk Civil 3D (Metric) NCS.dwt` template have "Storm Sewer" and "Sanitary Sewer"),
   and give each pipe a `start_invert` plus a negative `slope` for a falling sewer (-0.01 = 1 %). Check `warnings`
-  in the reply.
+  in the reply. Then `pipes_hydraulics` (design flows in L/s) and `pipes_qc` check capacity, velocity, d/D, cover
+  and sumps; tell the user which criteria you used and that they should match their design standard.
+- Large or unfamiliar drawing: start with `doc_summary`, then narrow down with `query_list` (layer or type filter).
+- Storm runoff: `hydrology_flow_path` -> `hydrology_time_of_concentration` (path) -> `hydrology_rational`
+  (intensity for that duration, from the user's IDF data). Never invent rainfall intensity; ask for it.
+- Roads: assemblies get real cross sections with `assembly_add_subassembly` (lanes first, then curbs / shoulders
+  hooked to the lane edge point code, e.g. ETW); check designs with `qc_profile_k_values` and `qc_alignment`.
+- Quantities: `qty_pipe_lengths`, `qty_earthwork`, `qty_cost_estimate` (ask the user for the rates).
+- Pressure (water) networks need a pressure parts list with parts; if Civil 3D refuses to add a part, pass on the
+  tool's explanation rather than retrying.
 - Before deleting or changing many objects, say what will change and wait for a yes.
 - After drawing something, call `doc_zoom_extents` so the user can see it.
 - Report briefly: what was created or changed, names or handles, and key numbers (lengths, areas, volumes).
@@ -43,6 +52,10 @@ The user watches Civil 3D next to this chat, so every change shows up in their d
 ## When a tool fails
 
 - **"did not answer in time"**: a dialog box is probably open in Civil 3D. Ask the user to close it.
+- **"Missing or wrong token"**: the plugin and the MCP server don't match (usually right after an update). Ask the
+  user to close Civil 3D, run `install.bat` again, then restart Claude and open Civil 3D.
+- **"Blocked for safety"**: the plugin refused a command, system variable or script on purpose. Don't look for a way
+  around it; tell the user which step to do by hand in Civil 3D.
 - **Pipe or structure errors about the catalog**: ask the user to set it on the Civil 3D ribbon:
   Home tab -> Create Design -> Pipe Network (drop-down) -> Set Pipe Network Catalog (command `AECCSETNETWORKCATALOG`; `doc_run_command` with `_.AECCSETNETWORKCATALOG ` opens the dialog).
   Catalog folder for Civil 3D 2025: `C:\ProgramData\Autodesk\C3D 2025\enu\Pipes Catalog`; pick Metric Pipes and
