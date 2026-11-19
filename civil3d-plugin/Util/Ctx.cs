@@ -30,12 +30,14 @@ namespace Civil3DMcp
 
         public DBObject Open(string handleOrName, bool write = false) => Open(Find(handleOrName), write);
 
-        public BlockTableRecord CurrentSpace() => Open<BlockTableRecord>(Db.CurrentSpaceId, true);
+        /// <summary>The current space; read-only tools pass write: false (opening for write needs a document lock,
+        /// and every lock is an undo step).</summary>
+        public BlockTableRecord CurrentSpace(bool write = true) => Open<BlockTableRecord>(Db.CurrentSpaceId, write);
 
-        public BlockTableRecord ModelSpace()
+        public BlockTableRecord ModelSpace(bool write = true)
         {
             var bt = Open<BlockTable>(Db.BlockTableId);
-            return Open<BlockTableRecord>(bt[BlockTableRecord.ModelSpace], true);
+            return Open<BlockTableRecord>(bt[BlockTableRecord.ModelSpace], write);
         }
 
         /// <summary>Add an entity to the current space and apply layer/color/etc from args.</summary>
@@ -47,6 +49,14 @@ namespace Civil3DMcp
             Tr.AddNewlyCreatedDBObject(e, true);
             if (a != null) Props.ApplyCommon(e, a, this);
             return id;
+        }
+
+        /// <summary>Queue text for the command line. Always use this instead of Doc.SendStringToExecute, so the
+        /// next tool call waits until the command has run (see UndoTracker.Busy).</summary>
+        public void Send(string text, bool activate, bool wrapUpInactiveDoc, bool echo)
+        {
+            UndoTracker.Queued(Doc, text);
+            Doc.SendStringToExecute(text, activate, wrapUpInactiveDoc, echo);
         }
 
         public static string H(ObjectId id) => id.IsNull ? null : id.Handle.ToString();

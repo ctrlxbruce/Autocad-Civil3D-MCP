@@ -19,7 +19,8 @@ Tell the user what you are doing at each step.
    powershell -NoProfile -ExecutionPolicy Bypass -File C:\civil3d-mcp\scripts\install.ps1
    ```
 
-   Add `-Mode lean` (33 tools) or `-Mode code` (8 tools) only if the user wants fewer tools.
+   Add `-Mode search` (10 tools listed, all reachable by name), `-Mode lean` (35 tools) or `-Mode code` (8 tools)
+   only if the user wants fewer tools.
    Exit code 0 means everything worked. Otherwise read its last lines and help the user fix the problem.
 4. If it stops with **"Python 3.10 or newer was not found"**, ask the user before installing Python
    (`winget install -e --id Python.Python.3.12`), then run step 3 again.

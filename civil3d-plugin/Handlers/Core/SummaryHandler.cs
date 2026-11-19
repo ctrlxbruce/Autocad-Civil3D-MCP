@@ -14,7 +14,7 @@ namespace Civil3DMcp.Handlers
             try { return Ctx.SafeIds(f()).Count(); } catch { return 0; }
         }
 
-        [Tool("doc.summary")]
+        [Tool("doc.summary", ReadOnly = true)]
         public static object Summary(Args a, Ctx c)
         {
             int grid = Math.Max(1, Math.Min(a.Int("grid", 4), 10));
@@ -25,7 +25,7 @@ namespace Civil3DMcp.Handlers
             Extents3d? ext = null;
             int total = 0;
 
-            foreach (ObjectId id in c.ModelSpace())
+            foreach (ObjectId id in c.ModelSpace(false))
             {
                 total++;
                 var type = id.ObjectClass.DxfName;

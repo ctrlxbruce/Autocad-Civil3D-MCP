@@ -26,6 +26,8 @@ The user watches Civil 3D next to this chat, so every change shows up in their d
 
 ## While working
 
+- If only a few civil3d tools are listed (search mode), find the others with `tools_search` and run them with
+  `tools_read` (read-only) or `tools_call` (changes the drawing). Every tool named below works that way.
 - Prefer a ready-made tool. If none fits: `skills_search` -> `skills_read` -> adapt the template ->
   `code_query` (read-only, always rolls back) or `code_execute` (changes the drawing).
 - When unsure what is in the drawing, look first with `query_list`, `props_get` or `code_query`.
@@ -45,8 +47,12 @@ The user watches Civil 3D next to this chat, so every change shows up in their d
 - Quantities: `qty_pipe_lengths`, `qty_earthwork`, `qty_cost_estimate` (ask the user for the rates).
 - Pressure (water) networks need a pressure parts list with parts; if Civil 3D refuses to add a part, pass on the
   tool's explanation rather than retrying.
-- Before deleting or changing many objects, say what will change and wait for a yes.
+- Before deleting or changing many objects, or running a `code_execute` script that edits existing objects, run
+  it through `doc_preview` first (same name and args; nothing changes), tell the user what it would add, change
+  and delete, and wait for a yes.
 - After drawing something, call `doc_zoom_extents` so the user can see it.
+- "Undo that": `doc_undo` (with `steps` for more than one) takes back your own last changes. If it refuses, the
+  user changed the drawing since; tell them to press Ctrl+Z in Civil 3D themselves. Then check the drawing.
 - Report briefly: what was created or changed, names or handles, and key numbers (lengths, areas, volumes).
 
 ## When a tool fails
@@ -54,6 +60,9 @@ The user watches Civil 3D next to this chat, so every change shows up in their d
 - **"did not answer in time"**: a dialog box is probably open in Civil 3D. Ask the user to close it.
 - **"Missing or wrong token"**: the plugin and the MCP server don't match (usually right after an update). Ask the
   user to close Civil 3D, run `install.bat` again, then restart Claude and open Civil 3D.
+- **"Drawing lock"** (or a note that the active drawing changed): the user switched drawings since you last called
+  `doc_info`. Nothing was changed. Tell them, ask which drawing to work on, and only then call `doc_info` (it
+  moves the lock to the active drawing) and try again. Never switch on your own.
 - **"Blocked for safety"**: the plugin refused a command, system variable or script on purpose. Don't look for a way
   around it; tell the user which step to do by hand in Civil 3D.
 - **Pipe or structure errors about the catalog**: ask the user to set it on the Civil 3D ribbon:

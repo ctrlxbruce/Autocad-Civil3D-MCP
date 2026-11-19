@@ -8,14 +8,15 @@ Types: string, number, integer, boolean, object, array,
 """
 from . import code, core, drafting, modify, layers, annotation, blocks, layouts
 from . import civil_points, civil_surfaces, civil_alignments, civil_corridors, civil_pipes, civil_styles
-from . import civil_pressure, civil_hydraulics, civil_quantities
+from . import civil_pressure, civil_hydraulics, civil_quantities, preview
+from . import meta
 
 MODULES = [code, core, drafting, modify, layers, annotation, blocks, layouts,
            civil_points, civil_surfaces, civil_alignments, civil_corridors, civil_pipes, civil_styles,
-           civil_pressure, civil_hydraulics, civil_quantities]
+           civil_pressure, civil_hydraulics, civil_quantities, preview]
 
 
-LOCAL = set(code.LOCAL_TOOLS)
+LOCAL = set(code.LOCAL_TOOLS) | set(preview.LOCAL_TOOLS)
 
 # Which tools load in each mode (CIVIL3D_MCP_MODE). Fewer tools = fewer tokens at the start of every chat.
 CODE_MODE = {"system.ping", "doc.info", "doc.run_command", "code.execute", "code.query",
@@ -25,8 +26,12 @@ LEAN_MODE = CODE_MODE | {
     "measure.distance", "measure.entity", "layers.list", "layers.set", "drafting.line", "drafting.polyline",
     "drafting.circle", "annotation.text", "annotation.mtext", "dim.aligned", "civil.list",
     "styles.categories", "styles.list", "styles.get", "styles.set", "points.import", "surface.info",
-    "doc.summary",
+    "doc.summary", "doc.preview", "doc.undo",
 }
+# Search mode lists these plus tools.search / tools.read / tools.call (meta.py); every other tool is reached by name.
+SEARCH_MODE = {"system.ping", "doc.info", "doc.summary", "query.list", "props.get", "civil.list", "doc.preview"}
+META = set(meta.TOOLS)
+MODES = ("full", "lean", "code", "search")
 
 
 # MCP tool annotations, so Claude can tell reading from changing. Claude Desktop / Claude Code use them when asking
@@ -34,7 +39,7 @@ LEAN_MODE = CODE_MODE | {
 # new objects or data. Everything else may change or remove existing objects or files ("destructive").
 READ_ONLY = {
     "alignment.info", "alignment.point_at", "alignment.station_offset", "assembly.info", "assembly.list_stock",
-    "blocks.list", "civil.list", "code.query", "doc.get_sysvar", "doc.info", "doc.summary",
+    "blocks.list", "civil.list", "code.query", "doc.get_sysvar", "doc.info", "doc.preview", "doc.summary",
     "hydrology.catchment_area", "hydrology.low_point", "hydrology.rational", "hydrology.time_of_concentration",
     "layers.list", "layouts.list", "layouts.list_papers", "linetypes.list", "measure.distance", "measure.entity",
     "parcels.list", "pipes.hydraulics", "pipes.network_info", "pipes.parts_lists", "pipes.qc",
@@ -73,6 +78,8 @@ OPEN_WORLD = {"doc.run_command", "code.execute"}
 
 def hints(name: str) -> dict:
     """ToolAnnotations fields for one plugin tool name."""
+    if name in meta.HINTS:
+        return dict(meta.HINTS[name])
     if name in READ_ONLY:
         return {"readOnlyHint": True, "openWorldHint": False}
     out = {"readOnlyHint": False, "destructiveHint": name not in ADDITIVE}
@@ -82,15 +89,20 @@ def hints(name: str) -> dict:
 
 
 def all_tools(mode: str = "full") -> dict:
+    if mode not in MODES:
+        raise ValueError(f"Unknown CIVIL3D_MCP_MODE '{mode}'. Use one of: {', '.join(MODES)}.")
+    only = {"code": CODE_MODE, "lean": LEAN_MODE, "search": SEARCH_MODE}.get(mode)
     out = {}
     for m in MODULES:
         items = list(m.TOOLS.items()) + list(getattr(m, "LOCAL_TOOLS", {}).items())
         for name, spec in items:
-            if mode == "code" and name not in CODE_MODE:
-                continue
-            if mode == "lean" and name not in LEAN_MODE:
-                continue
             if name in out:
                 raise ValueError(f"duplicate tool {name}")
             out[name] = spec
-    return out
+    if mode == "search":
+        groups = meta.groups_text(out)
+        out = {n: s for n, s in out.items() if n in only}
+        for name, (desc, params) in meta.TOOLS.items():
+            out[name] = (desc.replace("{groups}", groups), params)
+        return out
+    return {n: s for n, s in out.items() if only is None or n in only}

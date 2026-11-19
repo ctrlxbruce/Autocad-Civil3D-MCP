@@ -7,7 +7,7 @@ namespace Civil3DMcp.Handlers
 {
     public static class LayerHandler
     {
-        [Tool("layers.list")]
+        [Tool("layers.list", ReadOnly = true)]
         public static object ListLayers(Args a, Ctx c)
         {
             var lt = c.Open<LayerTable>(c.Db.LayerTableId);
@@ -67,7 +67,7 @@ namespace Civil3DMcp.Handlers
             return res;
         }
 
-        [Tool("linetypes.list")]
+        [Tool("linetypes.list", ReadOnly = true)]
         public static object ListLinetypes(Args a, Ctx c) =>
             c.Open<LinetypeTable>(c.Db.LinetypeTableId).Cast<ObjectId>().Select(id => c.Open<LinetypeTableRecord>(id).Name).ToList();
     }

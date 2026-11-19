@@ -16,6 +16,8 @@ namespace Civil3DMcp
         {
             MainThread.Init();          // must run on Civil 3D's main thread
             Router.Init();
+            DocIds.Init();
+            UndoTracker.Init();
             Server = new Listener(Port);
             Server.Start();
             Say($"\n[Civil3D MCP] Ready. Listening on 127.0.0.1:{Port}. {Router.Count} tools loaded. Commands: MCPSTATUS, MCPSTOP, MCPSTART\n");

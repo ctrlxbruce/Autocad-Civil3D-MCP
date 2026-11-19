@@ -10,7 +10,7 @@ namespace Civil3DMcp.Handlers
 {
     public static class LayoutHandler
     {
-        [Tool("layouts.list")]
+        [Tool("layouts.list", ReadOnly = true)]
         public static object ListLayouts(Args a, Ctx c)
         {
             var dict = c.Open<DBDictionary>(c.Db.LayoutDictionaryId);
@@ -22,7 +22,7 @@ namespace Civil3DMcp.Handlers
                 .ToList();
         }
 
-        [Tool("layouts.create")]
+        [Tool("layouts.create", NoPreview = "switches layout tabs")]
         public static object CreateLayout(Args a, Ctx c)
         {
             var id = LayoutManager.Current.CreateLayout(a.NeedStr("name"));
@@ -30,10 +30,10 @@ namespace Civil3DMcp.Handlers
             return new { handle = Ctx.H(id) };
         }
 
-        [Tool("layouts.set_current")]
+        [Tool("layouts.set_current", NoPreview = "switches layout tabs")]
         public static object SetCurrentLayout(Args a, Ctx c) { LayoutManager.Current.CurrentLayout = a.NeedStr("name"); return new { current = a.Str("name") }; }
 
-        [Tool("layouts.delete")]
+        [Tool("layouts.delete", NoPreview = "removes a layout tab")]
         public static object DeleteLayout(Args a, Ctx c) { LayoutManager.Current.DeleteLayout(a.NeedStr("name")); return new { deleted = true }; }
 
         /// <summary>Viewport on a layout: center/size in paper units, view_center in model units, scale e.g. 1/500 = 0.002.</summary>
@@ -63,7 +63,7 @@ namespace Civil3DMcp.Handlers
         }
 
         /// <summary>Plot the current layout (or model) to PDF using "DWG To PDF.pc3".</summary>
-        [Tool("layouts.plot_pdf")]
+        [Tool("layouts.plot_pdf", NoPreview = "writes a PDF file")]
         public static object PlotPdf(Args a, Ctx c)
         {
             var output = a.NeedStr("output_path");
@@ -113,7 +113,7 @@ namespace Civil3DMcp.Handlers
             return new { pdf = output };
         }
 
-        [Tool("layouts.list_papers")]
+        [Tool("layouts.list_papers", ReadOnly = true)]
         public static object ListPapers(Args a, Ctx c)
         {
             var btr = c.Open<BlockTableRecord>(c.Db.CurrentSpaceId);

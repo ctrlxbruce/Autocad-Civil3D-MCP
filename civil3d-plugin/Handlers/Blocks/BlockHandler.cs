@@ -8,7 +8,7 @@ namespace Civil3DMcp.Handlers
 {
     public static class BlockHandler
     {
-        [Tool("blocks.list")]
+        [Tool("blocks.list", ReadOnly = true)]
         public static object ListBlocks(Args a, Ctx c)
         {
             var bt = c.Open<BlockTable>(c.Db.BlockTableId);
@@ -107,7 +107,7 @@ namespace Civil3DMcp.Handlers
             return new { name, handle = Ctx.H(id) };
         }
 
-        [Tool("blocks.attach_xref")]
+        [Tool("blocks.attach_xref", NoPreview = "attaches an external drawing")]
         public static object AttachXref(Args a, Ctx c)
         {
             var path = a.NeedStr("path");

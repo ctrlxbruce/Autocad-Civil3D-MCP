@@ -1,5 +1,53 @@
 # Changelog
 
+## Unreleased
+
+**After updating:** close Civil 3D, run `install.bat` again, then restart Claude. The drawing lock needs the new
+plugin and the new MCP server together; with only one of them updated everything still works, without the lock.
+
+### New
+
+- **`search` mode** (`install.bat -Mode search`): Claude starts with 10 tools (about 1,100 tokens instead of
+  25,900) and still reaches all 183. It finds a tool by words with `tools_search` (for example "pipe slope" or
+  "water main") and runs it by name with `tools_read` (read-only tools) or `tools_call` (tools that add, change or
+  delete), so Claude can still ask before changing the drawing. Wrong names, missing or misspelt parameters are
+  caught before anything reaches Civil 3D. `full` stays the default.
+- **Drawing lock**: Claude only changes the drawing it last looked at (`doc_info` or `doc_summary`). If you
+  switch to another drawing in the middle of a task, every tool that could change something is refused before it
+  runs, nothing is changed, and Claude asks which drawing to work on. Read-only tools still answer, with a note
+  that the drawing changed. Set `CIVIL3D_MCP_DRAWING_LOCK=0` to turn it off.
+- **Preview (dry run)**: `doc_preview` runs any tool that changes the drawing, including a C# script, and
+  reports what it would add, change and delete (type, handle, layer, name), then rolls everything back. Claude is
+  told to preview big deletes and edits and ask before doing them. Tools that act outside the drawing (save, plot
+  to PDF, command line, layout tabs, xrefs, system variables, CSV export) can't be previewed and say so. With an
+  older Civil 3D plugin, which would ignore the preview flag, `doc_preview` refuses instead of running the tool.
+- **Undo**: `doc_undo` takes back Claude's own last changes (`steps` for more than one), and only those. The
+  plugin keeps a list of Claude's steps on top of Civil 3D's undo history for each drawing; when anything else
+  changes the drawing (a command you run, Ctrl+Z, an edit in the Properties palette) or Claude uses the command
+  line, a layout or a system variable, the list ends and `doc_undo` refuses and points you to Ctrl+Z. 183 tools.
+- An unknown `CIVIL3D_MCP_MODE` now falls back to `full` with a warning in the MCP log.
+
+### Fixed
+
+- Every tool call, even one that only reads, left a step in Civil 3D's undo history (Civil 3D records one each
+  time a program locks the drawing), so after Claude looked at the drawing you had to press Ctrl+Z several times
+  to undo one change. Tools that only read or only send a command no longer lock the drawing, and the listing
+  tools open it read-only; now each Ctrl+Z undoes one real change.
+- A tool call that arrived while a command Claude had sent was still waiting to run (UNDO, ZOOM, the command
+  line) could run first. The next call now waits until that exact command has run (Civil 3D's own hidden
+  commands don't end the wait).
+
+### Tested
+
+Civil 3D 2025, two blank drawings: 12 live drawing-lock checks passed (after switching tabs, `drafting_line`,
+`code_execute` and `doc_run_command` were refused and nothing was added; reads warned; after `doc_info` writes
+worked again). 17 live preview checks passed: adding, deleting and moving lines, a new layer, a C# script and a
+TIN surface were reported correctly and nothing was kept; save, command line and PDF plot were refused; a failing
+call said so. Undo, live: one and two steps, a zoom and a preview in between, reads leaving no undo step, refusing after a
+command-line command and after the user drew a polyline themselves (which was left alone): 12 checks, all
+passed, also right after starting Civil 3D. The 66 security checks from 1.1.0 still pass. Search mode was run live (find, draw, measure,
+delete) as well as in the automated tests.
+
 ## 1.1.0 (2026-11-19)
 
 24 new tools (181 in total) and a security fix. Several ideas came from [Jjo37/new-acad](https://github.com/Jjo37/new-acad) (MIT).

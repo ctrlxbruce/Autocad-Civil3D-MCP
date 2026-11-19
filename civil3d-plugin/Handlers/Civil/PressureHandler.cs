@@ -92,7 +92,7 @@ namespace Civil3DMcp.Handlers
             try { return s.FindElevationAtXY(x, y); } catch { return null; }
         }
 
-        [Tool("pressure.parts_lists")]
+        [Tool("pressure.parts_lists", ReadOnly = true)]
         public static object PartsLists(Args a, Ctx c)
         {
             var res = new List<object>();
@@ -190,7 +190,7 @@ namespace Civil3DMcp.Handlers
         [Tool("pressure.add_appurtenance")]
         public static object AddAppurtenance(Args a, Ctx c) => AddComponent(a, c, false);
 
-        [Tool("pressure.check_cover")]
+        [Tool("pressure.check_cover", ReadOnly = true)]
         public static object CheckCover(Args a, Ctx c)
         {
             var net = (PressurePipeNetwork)c.Open(a.NeedStr("network"));

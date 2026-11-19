@@ -28,7 +28,7 @@ namespace Civil3DMcp.Handlers
             try { var v = Reflect.Get(o, name); return v == null ? (double?)null : Convert.ToDouble(v); } catch { return null; }
         }
 
-        [Tool("qc.stopping_distance")]
+        [Tool("qc.stopping_distance", ReadOnly = true)]
         public static object StoppingDistance(Args a, Ctx c)
         {
             var std = Standard(a);
@@ -45,7 +45,7 @@ namespace Civil3DMcp.Handlers
             };
         }
 
-        [Tool("qc.profile_k_values")]
+        [Tool("qc.profile_k_values", ReadOnly = true)]
         public static object ProfileKValues(Args a, Ctx c)
         {
             var std = Standard(a);
@@ -87,7 +87,7 @@ namespace Civil3DMcp.Handlers
             };
         }
 
-        [Tool("qc.alignment")]
+        [Tool("qc.alignment", ReadOnly = true)]
         public static object AlignmentCheck(Args a, Ctx c)
         {
             var std = Standard(a);

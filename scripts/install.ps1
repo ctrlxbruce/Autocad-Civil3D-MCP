@@ -11,7 +11,7 @@
     Safe to run again: it updates an existing installation.
 
 .PARAMETER Mode
-    full (default, 157 tools), lean (32 tools) or code (8 tools).
+    full (default, 183 tools), lean (35 tools), code (8 tools) or search (10 tools listed, the rest found by name).
 
 .PARAMETER Python
     Path to a python.exe (3.10 or newer) to use instead of searching for one.
@@ -27,7 +27,7 @@
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('full', 'lean', 'code')]
+    [ValidateSet('full', 'lean', 'code', 'search')]
     [string]$Mode = 'full',
     [string]$Python,
     [string]$PluginDll,

@@ -29,7 +29,7 @@ namespace Civil3DMcp.Handlers
             return Ctx.H(id);
         }
 
-        [Tool("pipes.parts_lists")]
+        [Tool("pipes.parts_lists", ReadOnly = true)]
         public static object PartsLists(Args a, Ctx c)
         {
             var res = new List<object>();
@@ -166,7 +166,7 @@ namespace Civil3DMcp.Handlers
             return new { ok = true };
         }
 
-        [Tool("pipes.network_info")]
+        [Tool("pipes.network_info", ReadOnly = true)]
         public static object Info(Args a, Ctx c)
         {
             var net = c.Open(a.NeedStr("network"));
@@ -191,14 +191,14 @@ namespace Civil3DMcp.Handlers
             return new { applied = n };
         }
 
-        [Tool("pipes.interference_check")]
+        [Tool("pipes.interference_check", NoPreview = "starts a Civil 3D command")]
         public static object Interference(Args a, Ctx c)
         {
-            c.Doc.SendStringToExecute("_AeccCreateInterferenceCheck ", true, false, true);
+            c.Send("_AeccCreateInterferenceCheck ", true, false, true);
             return new { note = "Interference Check command started in Civil 3D. Pick the networks in the dialog." };
         }
 
-        [Tool("pressure.network_info")]
+        [Tool("pressure.network_info", ReadOnly = true)]
         public static object PressureInfo(Args a, Ctx c)
         {
             var net = c.Open(a.NeedStr("network"));

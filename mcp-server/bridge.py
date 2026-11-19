@@ -20,7 +20,9 @@ _ids = itertools.count(1)
 
 
 class Civil3DError(RuntimeError):
-    pass
+    def __init__(self, message: str, doc: dict | None = None):
+        super().__init__(message)
+        self.doc = doc          # the drawing that was active when the plugin answered, if it said
 
 
 def token_file() -> Path:
@@ -39,7 +41,18 @@ def read_token() -> str:
 
 
 def call(tool: str, args: dict | None = None) -> object:
+    return call_with_doc(tool, args)[0]
+
+
+def call_with_doc(tool: str, args: dict | None = None, expect_doc: dict | None = None,
+                  dry_run: bool = False) -> tuple[object, dict | None]:
+    """Result plus the active drawing ({"id", "name"}). With expect_doc, the plugin refuses to run the tool when
+    another drawing is active (drawing lock). With dry_run, it previews the tool and rolls everything back."""
     req = {"id": next(_ids), "token": read_token(), "tool": tool, "args": args or {}}
+    if expect_doc:
+        req["expect_doc"] = expect_doc
+    if dry_run:
+        req["dry_run"] = True
     try:
         with socket.create_connection((HOST, PORT), timeout=TIMEOUT) as s:
             s.sendall((json.dumps(req) + "\n").encode("utf-8"))
@@ -60,6 +73,7 @@ def call(tool: str, args: dict | None = None) -> object:
     if not buf:
         raise Civil3DError("Empty reply from Civil 3D.")
     reply = json.loads(buf.decode("utf-8"))
+    doc = reply.get("doc") if isinstance(reply.get("doc"), dict) else None
     if not reply.get("ok"):
-        raise Civil3DError(reply.get("error", "Unknown error"))
-    return reply.get("result")
+        raise Civil3DError(reply.get("error", "Unknown error"), doc)
+    return reply.get("result"), doc

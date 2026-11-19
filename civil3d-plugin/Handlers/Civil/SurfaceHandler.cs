@@ -170,7 +170,7 @@ namespace Civil3DMcp.Handlers
             return new { handle = Ctx.H(vid), volumes = Props.GetAll(vol) };
         }
 
-        [Tool("surface.info")]
+        [Tool("surface.info", ReadOnly = true)]
         public static object InfoTool(Args a, Ctx c) => Info(c.Open(a.NeedStr("surface")), full: true);
 
         static object Info(object s, bool full = false)
@@ -191,7 +191,7 @@ namespace Civil3DMcp.Handlers
             try { if (Reflect.Get(s, "IsOutOfDate") is bool b && b) Reflect.Call(s, "Rebuild"); } catch { }
         }
 
-        [Tool("surface.elevation_at")]
+        [Tool("surface.elevation_at", ReadOnly = true)]
         public static object ElevationAt(Args a, Ctx c)
         {
             var s = c.Open(a.NeedStr("surface"));

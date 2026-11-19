@@ -33,7 +33,7 @@ namespace Civil3DMcp.Handlers
 
         static readonly string[] ParamCollections = { "ParamsDouble", "ParamsLong", "ParamsBool", "ParamsString" };
 
-        [Tool("assembly.list_stock")]
+        [Tool("assembly.list_stock", ReadOnly = true)]
         public static object ListStock(Args a, Ctx c)
         {
             var cat = a.Str("category");
@@ -210,7 +210,7 @@ namespace Civil3DMcp.Handlers
                          parameters, point_codes = codes };
         }
 
-        [Tool("assembly.info")]
+        [Tool("assembly.info", ReadOnly = true)]
         public static object Info(Args a, Ctx c)
         {
             var asm = (CivilAssembly)c.Open(a.NeedStr("assembly"));

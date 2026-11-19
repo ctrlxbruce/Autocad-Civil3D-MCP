@@ -19,7 +19,7 @@ namespace Civil3DMcp.Handlers
     /// </summary>
     public static class CivilCommonHandler
     {
-        [Tool("civil.list")]
+        [Tool("civil.list", ReadOnly = true)]
         public static object ListCivil(Args a, Ctx c)
         {
             string kind = a.Str("kind", "surfaces").ToLowerInvariant();
@@ -46,7 +46,7 @@ namespace Civil3DMcp.Handlers
                         ["sample_line_groups"] = "SampleLineGroup", ["parcels"] = "Parcel"
                     };
                     var tn = map[kind];
-                    ids = c.ModelSpace().Cast<ObjectId>().Where(i => i.ObjectClass.Name.EndsWith(tn, StringComparison.OrdinalIgnoreCase)
+                    ids = c.ModelSpace(false).Cast<ObjectId>().Where(i => i.ObjectClass.Name.EndsWith(tn, StringComparison.OrdinalIgnoreCase)
                                                                || i.ObjectClass.DxfName.Replace("_", "").EndsWith(tn, StringComparison.OrdinalIgnoreCase)).ToList();
                     if (kind == "sample_line_groups")
                         ids = Ctx.SafeIds(Reflect.Call(c.Civ, "GetAlignmentIds"))
@@ -63,14 +63,14 @@ namespace Civil3DMcp.Handlers
 
         internal static T Safe<T>(Func<T> f) { try { return f(); } catch { return default; } }
 
-        [Tool("styles.categories")]
+        [Tool("styles.categories", ReadOnly = true)]
         public static object Categories(Args a, Ctx c)
         {
             object root = a.Has("path") ? Reflect.GetPath(c.Civ.Styles, a.Str("path")) : c.Civ.Styles;
             return root.GetType().GetProperties().Select(p => p.Name).OrderBy(x => x).ToList();
         }
 
-        [Tool("styles.list")]
+        [Tool("styles.list", ReadOnly = true)]
         public static object ListStyles(Args a, Ctx c) => c.StyleNames(a.NeedStr("category"));
 
         /// <summary>Create a style (or get existing) and optionally set properties on it.</summary>
@@ -91,7 +91,7 @@ namespace Civil3DMcp.Handlers
             return new { handle = Ctx.H(id), name, props = report };
         }
 
-        [Tool("styles.get")]
+        [Tool("styles.get", ReadOnly = true)]
         public static object GetStyle(Args a, Ctx c)
         {
             var o = c.Open(c.StyleId(a.NeedStr("category"), a.NeedStr("name")));

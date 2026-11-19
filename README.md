@@ -12,7 +12,7 @@
 > *"Import survey.csv, build an EG surface with 1 m contours, then give me the cut/fill volume against FG."*
 
 Civil 3D MCP connects AI assistants (**Claude Desktop**, **Claude Code**, Cline and other MCP clients) to Autodesk Civil 3D.
-It ships with **181 ready-made tools** for drafting, COGO points, surfaces, alignments, profiles, corridors, sewer and
+It ships with **183 ready-made tools** for drafting, COGO points, surfaces, alignments, profiles, corridors, sewer and
 water networks, hydrology, quantities and PDF plotting. For anything those tools don't cover, Claude can write and run C#
 code inside Civil 3D, starting from a library of tested templates.
 
@@ -117,7 +117,7 @@ The normal Claude chat can't run programs on your computer, so it can't install 
 | 5 | Installs the **civil3d skill** for Claude Code, so you can type `/civil3d` |
 
 You can run it again at any time; it updates the existing setup. To load fewer tools, run
-`install.bat -Mode lean` (see [Modes](#modes-control-token-use)).
+`install.bat -Mode search` or `install.bat -Mode lean` (see [Modes](#modes-control-token-use)).
 
 <details>
 <summary><b>Option C: manual setup (other MCP clients, or if you prefer)</b></summary>
@@ -205,9 +205,15 @@ Set the mode with `CIVIL3D_MCP_MODE` in the config from Step 3.
 
 | Mode | Tools | Tool-list size | Best for |
 |---|---|---|---|
-| `full` (default) | 181 | ~25,600 tokens | Everyday work. Claude picks a ready tool, so calls are short and rarely fail. |
-| `lean` | 33 | ~4,900 tokens | Common drafting tools, property tools, drawing summary, code execution and skills |
+| `full` (default) | 183 | ~25,900 tokens | Everyday work. Claude picks a ready tool, so calls are short and rarely fail. |
+| `lean` | 35 | ~5,100 tokens | Common drafting tools, property tools, drawing summary, preview, undo, code execution and skills |
 | `code` | 8 | ~1,000 tokens | Claude writes C# for everything, using the skills library |
+| `search` | 10 listed, all 183 usable | ~1,100 tokens | Saving tokens without losing tools. Claude sees 7 core tools (including `doc_preview`) plus `tools_search`, `tools_read` and `tools_call`, finds the tool it needs by words (such as "pipe slope") and runs it by name. |
+
+In `search` mode, read-only tools run through `tools_read` and everything that adds, changes or deletes runs
+through `tools_call`, so Claude can still ask before changing your drawing. It takes one extra step per new
+tool, so `full` stays the default. Claude Code already loads large tool lists on demand, so `search` mainly helps
+in Claude Desktop.
 
 ---
 
@@ -222,6 +228,7 @@ Set the mode with `CIVIL3D_MCP_MODE` in the config from Step 3.
 | The civil3d tools don't appear in Claude | Run `install.bat` again and read its summary. Then fully quit and reopen Claude Desktop, or start a new Claude Code session (`claude mcp list` should show `civil3d`). |
 | **"Civil 3D did not answer in time"** | A dialog box is probably open in Civil 3D. Close it and try again. |
 | **"Missing or wrong token"** | Happens right after updating from 1.0. Close Civil 3D, run `install.bat` again, then fully quit and reopen Claude Desktop (or start a new Claude Code session) and open Civil 3D. |
+| **"Drawing lock"** | You switched to another drawing after Claude last looked. Tell Claude which drawing to work on; it calls `doc_info` and carries on. |
 | **"Blocked for safety"** | The command or code does something the plugin doesn't allow (see [Safety and privacy](#safety-and-privacy)). Do that step yourself in Civil 3D. |
 | Can't add pipes or structures | Set the pipe catalog for the drawing: **Home tab → Create Design → Pipe Network ▾ → Set Pipe Network Catalog** (or type `AECCSETNETWORKCATALOG`; for pressure networks `AECCSETPRESSURENETWORKCATALOG`). Folder for Civil 3D 2025: `C:\ProgramData\Autodesk\C3D 2025\enu\Pipes Catalog`; choose **Metric Pipes** and **Metric Structures** for metric drawings. If the parts list still has no sizes, start the drawing from `_Autodesk Civil 3D (Metric) NCS.dwt`. |
 | Something else | Open an [issue](https://github.com/ctrlxbruce/Autocad-Civil3D-MCP/issues) with the error message and your Civil 3D version. |
@@ -247,6 +254,16 @@ Set the mode with `CIVIL3D_MCP_MODE` in the config from Step 3.
   becomes part of your chat with the AI service, just like anything else you type.
 - **No half-finished changes.** Every request runs in one transaction. If it fails, the drawing is left as it was.
   Read-only code (`code_query`) always rolls back.
+- **Drawing lock.** Claude only changes the drawing it last looked at. If you switch to another drawing tab
+  in the middle of a task, tools that would change something are refused ("Drawing lock"), nothing is changed, and
+  Claude asks you which drawing to work on. Reading still works, with a note that the drawing changed.
+- **Undo that never touches your work.** Each change Claude makes is exactly one Ctrl+Z in Civil 3D (reading
+  the drawing leaves nothing in the undo history). Ask Claude to "undo that" and `doc_undo` takes back only
+  Claude's own last changes. If you changed the drawing yourself since (any command, Ctrl+Z, the Properties
+  palette), or Claude used the command line, a layout or a system variable, it refuses and tells you to use Ctrl+Z.
+- **Preview before changing.** `doc_preview` runs any tool (or a C# script) as a dry run: Civil 3D reports what it
+  would add, change and delete, then rolls everything back. Ask Claude to "preview first" before big deletes or
+  edits. Tools that save, plot, switch layouts or use the command line can't be previewed and say so.
 - **Blocked commands.** `doc_run_command` refuses commands that start programs or open files outside Civil 3D
   (`SHELL`, `START`, `BROWSER`…), load code (`NETLOAD`, `APPLOAD`, `SCRIPT`, VBA), close Civil 3D, and AutoLISP.
   `doc_set_sysvar` can't change security settings such as `SECURELOAD` or `TRUSTEDPATHS`.
@@ -364,7 +381,7 @@ Not yet tested: adding pressure parts (see above), xrefs and DWG import, and Civ
 ```
 ┌──────────────────────┐   stdio   ┌───────────────────────────┐  TCP / JSON lines  ┌──────────────────────────────┐
 │  AI Assistant        │ ────────▶ │  MCP Server (Python)      │ ─────────────────▶ │  Civil 3D Plugin (.NET 8)    │
-│  Claude Desktop,     │ ◀──────── │  181 tools · 3 modes      │ ◀───────────────── │  176 handlers + Roslyn engine │
+│  Claude Desktop,     │ ◀──────── │  183 tools · 4 modes      │ ◀───────────────── │  176 handlers + Roslyn engine │
 │  Claude Code, Cline  │           │  127.0.0.1:8765           │                    │  runs on Civil 3D main thread │
 └──────────────────────┘           └─────────────┬─────────────┘                    └──────────────┬───────────────┘
                                                  │                                                 │
@@ -447,12 +464,13 @@ DatabaseServices, Geometry, EditorInput, Colors), `Autodesk.Civil`, `Autodesk.Ci
 
 | Variable | Default | Description |
 |---|---|---|
-| `CIVIL3D_MCP_MODE` | `full` | `full` · `lean` · `code` (see [Modes](#modes-control-token-use)) |
+| `CIVIL3D_MCP_MODE` | `full` | `full` · `lean` · `code` · `search` (see [Modes](#modes-control-token-use)) |
 | `CIVIL3D_MCP_HOST` | `127.0.0.1` | Where the plugin listens |
 | `CIVIL3D_MCP_PORT` | `8765` | Plugin port. The plugin's own port is set in `PluginEntry.cs`, so changing it means rebuilding. |
 | `CIVIL3D_MCP_TIMEOUT` | `300` | Seconds to wait for Civil 3D |
 | `CIVIL3D_SKILLS_DIR` | `../skills` | Folder with `.skill.md` templates |
 | `CIVIL3D_MCP_TOKEN_FILE` | `%LOCALAPPDATA%\Civil3DMcp\token-8765` | Where the MCP server reads the plugin's token |
+| `CIVIL3D_MCP_DRAWING_LOCK` | `1` | `0` turns the drawing lock off |
 | `CIVIL3D_MCP_ALLOW_LISP` | *(unset)* | Set to `1` **for Civil 3D itself** (not the MCP server) to let `doc_run_command` send AutoLISP |
 
 </details>

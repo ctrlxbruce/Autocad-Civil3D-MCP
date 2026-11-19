@@ -65,7 +65,7 @@ namespace Civil3DMcp.Handlers
             return lines;
         }
 
-        [Tool("qty.pipe_lengths")]
+        [Tool("qty.pipe_lengths", ReadOnly = true)]
         public static object PipeLengths(Args a, Ctx c)
         {
             var lines = Collect(c, a);
@@ -80,7 +80,7 @@ namespace Civil3DMcp.Handlers
             return new { rows, pipe_totals_by_size = totals, note = "Pipe lengths are 2D, centre to centre." };
         }
 
-        [Tool("qty.earthwork")]
+        [Tool("qty.earthwork", ReadOnly = true)]
         public static object Earthwork(Args a, Ctx c)
         {
             var rows = new List<object>();
@@ -103,7 +103,7 @@ namespace Civil3DMcp.Handlers
             };
         }
 
-        [Tool("qty.cost_estimate")]
+        [Tool("qty.cost_estimate", NoPreview = "can write a CSV file (it doesn't change the drawing, so it can simply be run)")]
         public static object CostEstimate(Args a, Ctx c)
         {
             var rows = new List<(string item, double qty, string unit, double rate)>();

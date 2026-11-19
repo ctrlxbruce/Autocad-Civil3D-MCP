@@ -166,7 +166,7 @@ namespace Civil3DMcp.Handlers
             return new { views = res, warnings };
         }
 
-        [Tool("sections.sample_line_info")]
+        [Tool("sections.sample_line_info", ReadOnly = true)]
         public static object SampleInfo(Args a, Ctx c)
         {
             var sl = c.Open(a.NeedStr("sample_line"));
@@ -225,7 +225,7 @@ namespace Civil3DMcp.Handlers
 
         /// <summary>Parcels in a site with area/perimeter. (Creating parcels from objects is UI-only in Civil 3D:
         /// use doc.run_command "_CreateParcelFromObjects".)</summary>
-        [Tool("parcels.list")]
+        [Tool("parcels.list", ReadOnly = true)]
         public static object ParcelsList(Args a, Ctx c)
         {
             var site = c.Open(a.NeedStr("site"));

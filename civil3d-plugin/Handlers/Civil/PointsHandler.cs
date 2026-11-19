@@ -42,7 +42,7 @@ namespace Civil3DMcp.Handlers
             return new { created = res.Count, points = res };
         }
 
-        [Tool("points.list")]
+        [Tool("points.list", ReadOnly = true)]
         public static object ListPoints(Args a, Ctx c)
         {
             int limit = a.Int("limit", 500);
@@ -63,7 +63,7 @@ namespace Civil3DMcp.Handlers
         }
 
         /// <summary>Find a point by its point number.</summary>
-        [Tool("points.get")]
+        [Tool("points.get", ReadOnly = true)]
         public static object GetPoint(Args a, Ctx c)
         {
             uint n = (uint)a.Int("number");
@@ -97,7 +97,7 @@ namespace Civil3DMcp.Handlers
             return new { deleted = n };
         }
 
-        [Tool("points.list_file_formats")]
+        [Tool("points.list_file_formats", ReadOnly = true)]
         public static object Formats(Args a, Ctx c)
         {
             var fmts = Reflect.CallStatic(Reflect.T("PointFileFormatCollection"), "GetPointFileFormats", c.Db);
@@ -294,7 +294,7 @@ namespace Civil3DMcp.Handlers
         }
 
         // ---------------------------------------------------------------- description keys
-        [Tool("points.description_keys")]
+        [Tool("points.description_keys", ReadOnly = true)]
         public static object DescKeys(Args a, Ctx c)
         {
             var t = Reflect.T("PointDescriptionKeySetCollection");

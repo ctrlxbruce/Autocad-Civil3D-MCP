@@ -44,7 +44,7 @@ namespace Civil3DMcp.Handlers
             return inside;
         }
 
-        [Tool("hydrology.rational")]
+        [Tool("hydrology.rational", ReadOnly = true)]
         public static object Rational(Args a, Ctx c)
         {
             double f = Hydraulics.ToMeters(c.Db);
@@ -80,7 +80,7 @@ namespace Civil3DMcp.Handlers
             };
         }
 
-        [Tool("hydrology.time_of_concentration")]
+        [Tool("hydrology.time_of_concentration", ReadOnly = true)]
         public static object TimeOfConcentration(Args a, Ctx c)
         {
             double f = Hydraulics.ToMeters(c.Db);
@@ -143,7 +143,7 @@ namespace Civil3DMcp.Handlers
             return (len, pts[0].Z - pts[pts.Count - 1].Z);
         }
 
-        [Tool("hydrology.catchment_area")]
+        [Tool("hydrology.catchment_area", ReadOnly = true)]
         public static object CatchmentArea(Args a, Ctx c)
         {
             double f = Hydraulics.ToMeters(c.Db);
@@ -191,7 +191,7 @@ namespace Civil3DMcp.Handlers
             return (lo.Value, hi.Value, sum / count, count);
         }
 
-        [Tool("hydrology.low_point")]
+        [Tool("hydrology.low_point", ReadOnly = true)]
         public static object LowPoint(Args a, Ctx c)
         {
             var s = (CivilSurface)c.Open(a.NeedStr("surface"));

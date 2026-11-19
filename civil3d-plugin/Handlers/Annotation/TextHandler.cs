@@ -120,7 +120,7 @@ namespace Civil3DMcp.Handlers
             return new { name, handle = Ctx.H(rec.ObjectId) };
         }
 
-        [Tool("styles.list_text_styles")]
+        [Tool("styles.list_text_styles", ReadOnly = true)]
         public static object ListTextStyles(Args a, Ctx c) =>
             c.Open<TextStyleTable>(c.Db.TextStyleTableId).Cast<ObjectId>().Select(id => c.Open<TextStyleTableRecord>(id))
              .Select(r => new { name = r.Name, font = string.IsNullOrEmpty(r.FileName) ? r.Font.TypeFace : r.FileName, height = r.TextSize, width_factor = r.XScale })

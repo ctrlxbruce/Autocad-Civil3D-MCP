@@ -61,7 +61,7 @@ namespace Civil3DMcp.Handlers
             return flows;
         }
 
-        [Tool("pipes.hydraulics")]
+        [Tool("pipes.hydraulics", ReadOnly = true)]
         public static object PipeHydraulics(Args a, Ctx c)
         {
             var net = (Network)c.Open(a.NeedStr("network"));
@@ -176,7 +176,7 @@ namespace Civil3DMcp.Handlers
                          method = "Simplified HGL (friction losses only), solved from the outlet upstream." };
         }
 
-        [Tool("pipes.qc")]
+        [Tool("pipes.qc", ReadOnly = true)]
         public static object PipeQc(Args a, Ctx c)
         {
             var net = (Network)c.Open(a.NeedStr("network"));

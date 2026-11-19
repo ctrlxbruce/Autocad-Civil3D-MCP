@@ -10,8 +10,9 @@ namespace Civil3DMcp
 {
     /// <summary>
     /// Tiny local TCP server. One JSON request per line, one JSON reply per line.
-    /// Request:  {"id":1,"token":"...","tool":"drafting.line","args":{...}}
-    /// Reply:    {"id":1,"ok":true,"result":{...}}  or  {"id":1,"ok":false,"error":"..."}
+    /// Request:  {"id":1,"token":"...","tool":"drafting.line","args":{...},"expect_doc":{"id":"...","name":"..."}}
+    /// Reply:    {"id":1,"ok":true,"result":{...},"doc":{"id","name"}}  or  {"id":1,"ok":false,"error":"...","doc":...}
+    /// expect_doc is optional (the drawing lock, see DocIds); "dry_run":true previews the tool (see ChangeLog).
     /// Only listens on 127.0.0.1, so nothing outside your PC can reach it. Every request must carry the token
     /// from %LOCALAPPDATA%\Civil3DMcp\token-&lt;port&gt; (see Security); a line that isn't a JSON request, or a wrong
     /// token, closes the connection.
@@ -90,8 +91,11 @@ namespace Civil3DMcp
                     {
                         string tool = req["tool"]?.ToString();
                         var args = req["args"] as JsonObject ?? new JsonObject();
+                        var expectDoc = req["expect_doc"] as JsonObject;
+                        bool dryRun = false;
+                        try { dryRun = req["dry_run"]?.GetValue<bool>() == true; } catch { }
                         // Everything that touches the drawing runs on the main thread.
-                        reply = MainThread.Run(() => Router.Execute(tool, args));
+                        reply = MainThread.Run(() => Router.Execute(tool, args, expectDoc, dryRun));
                     }
                     catch (Exception ex)
                     {

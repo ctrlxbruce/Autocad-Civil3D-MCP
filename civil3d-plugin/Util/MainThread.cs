@@ -30,6 +30,8 @@ namespace Civil3DMcp
 
         private static void OnIdle(object sender, EventArgs e)
         {
+            // Let command text we queued (UNDO, ZOOM...) run first; Run() keeps nudging until it has.
+            if (UndoTracker.Busy()) return;
             while (Queue.TryDequeue(out var job))
             {
                 try { job.tcs.SetResult(job.fn()); }

@@ -91,7 +91,7 @@ namespace Civil3DMcp.Handlers
         static Dictionary<string, object> Summary(object al) =>
             Props.Pick(al, "Name", "Handle", "StartingStation", "EndingStation", "Length", "StyleName", "AlignmentType");
 
-        [Tool("alignment.info")]
+        [Tool("alignment.info", ReadOnly = true)]
         public static object Info(Args a, Ctx c)
         {
             var al = c.Open(a.NeedStr("alignment"));
@@ -106,7 +106,7 @@ namespace Civil3DMcp.Handlers
             return d;
         }
 
-        [Tool("alignment.station_offset")]
+        [Tool("alignment.station_offset", ReadOnly = true)]
         public static object StationOffset(Args a, Ctx c)
         {
             var al = c.Open(a.NeedStr("alignment"));
@@ -115,7 +115,7 @@ namespace Civil3DMcp.Handlers
             return new { station = r[2], offset = r[3] };
         }
 
-        [Tool("alignment.point_at")]
+        [Tool("alignment.point_at", ReadOnly = true)]
         public static object PointAt(Args a, Ctx c)
         {
             var al = c.Open(a.NeedStr("alignment"));
@@ -210,7 +210,7 @@ namespace Civil3DMcp.Handlers
         static Dictionary<string, object> Summary(object pr) =>
             Props.Pick(pr, "Name", "Handle", "StartingStation", "EndingStation", "Length", "ElevationMin", "ElevationMax", "ProfileType", "StyleName");
 
-        [Tool("profile.info")]
+        [Tool("profile.info", ReadOnly = true)]
         public static object Info(Args a, Ctx c)
         {
             var pr = c.Open(a.NeedStr("profile"));
@@ -222,7 +222,7 @@ namespace Civil3DMcp.Handlers
             return d;
         }
 
-        [Tool("profile.elevation_at")]
+        [Tool("profile.elevation_at", ReadOnly = true)]
         public static object ElevationAt(Args a, Ctx c)
         {
             var pr = c.Open(a.NeedStr("profile"));

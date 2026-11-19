@@ -17,6 +17,11 @@ TOOLS = {
                     {"top": ("integer", "How many types / layers to list (default 15)"),
                      "grid": ("integer", "Spatial grid size, default 4")}),
     "doc.save": ("Save the drawing (QSAVE) or Save As when path is given.", {"path": ("string", "Optional full path ending in .dwg (no quotes)")}),
+    "doc.undo": ("Undo Claude's own last changes in the active drawing (one step = one tool call that changed it; a "
+                 "zoom after it is undone with it). Refuses when the drawing was changed another way since (by the "
+                 "user, a command-line command, a layout or system-variable change), so it never undoes the user's "
+                 "work; then the user can press Ctrl+Z in Civil 3D.",
+                 {"steps": ("integer", "How many of Claude's changes to undo (default 1)")}),
     "query.list": ("List objects in the current space with handle, type, layer and name. Filter by type (Line, Polyline, "
                    "Circle, TinSurface, Alignment, CogoPoint, ...) and/or layer.",
                    {"type": ("string", "Class name filter"), "layer": ("string", "Layer filter"), "limit": ("integer", "Max items (default 200)")}),

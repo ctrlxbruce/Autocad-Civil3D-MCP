@@ -168,13 +168,13 @@ namespace Civil3DMcp.Handlers
             return new { name, handle = Ctx.H(rec.ObjectId), settings = report };
         }
 
-        [Tool("styles.list_dim_styles")]
+        [Tool("styles.list_dim_styles", ReadOnly = true)]
         public static object ListDimStyles(Args a, Ctx c) =>
             c.Open<DimStyleTable>(c.Db.DimStyleTableId).Cast<ObjectId>().Select(id => c.Open<DimStyleTableRecord>(id))
              .Select(r => new { name = r.Name, arrow_size = r.Dimasz, text_height = r.Dimtxt, scale = r.Dimscale, decimals = r.Dimdec, current = r.ObjectId == c.Db.Dimstyle })
              .ToList();
 
-        [Tool("styles.dim_style_get")]
+        [Tool("styles.dim_style_get", ReadOnly = true)]
         public static object DimStyleGet(Args a, Ctx c) => Props.GetAll(c.Open(c.DimStyleId(a.NeedStr("name"))));
 
         /// <summary>Arrow blocks only exist after first use; setting DIMBLK makes AutoCAD create them.</summary>

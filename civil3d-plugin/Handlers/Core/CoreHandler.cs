@@ -10,7 +10,7 @@ namespace Civil3DMcp.Handlers
     /// <summary>Drawing info, querying, generic properties, sysvars and command fallback.</summary>
     public static class CoreHandler
     {
-        [Tool("doc.info")]
+        [Tool("doc.info", ReadOnly = true)]
         public static object Info(Args a, Ctx c)
         {
             var db = c.Db;
@@ -30,14 +30,14 @@ namespace Civil3DMcp.Handlers
 
         static bool SafeCivil(Ctx c) { try { return c.Civ != null; } catch { return false; } }
 
-        [Tool("query.list")]
+        [Tool("query.list", ReadOnly = true)]
         public static object QueryList(Args a, Ctx c)
         {
             string type = a.Str("type");       // e.g. "Line", "Polyline", "Circle", "TinSurface", "CogoPoint"
             string layer = a.Str("layer");
             int limit = a.Int("limit", 200);
             var items = new List<object>();
-            foreach (ObjectId id in c.CurrentSpace())
+            foreach (ObjectId id in c.CurrentSpace(false))
             {
                 if (items.Count >= limit) break;
                 var e = c.Open(id) as Entity;
@@ -53,12 +53,12 @@ namespace Civil3DMcp.Handlers
             return new { count = items.Count, items };
         }
 
-        [Tool("query.count_by_type")]
+        [Tool("query.count_by_type", ReadOnly = true)]
         public static object CountByType(Args a, Ctx c) =>
-            c.CurrentSpace().Cast<ObjectId>().GroupBy(i => i.ObjectClass.Name)
+            c.CurrentSpace(false).Cast<ObjectId>().GroupBy(i => i.ObjectClass.Name)
              .ToDictionary(g => g.Key, g => g.Count());
 
-        [Tool("props.get")]
+        [Tool("props.get", ReadOnly = true)]
         public static object Get(Args a, Ctx c)
         {
             var o = c.Open(a.NeedStr("handle"));
@@ -78,7 +78,7 @@ namespace Civil3DMcp.Handlers
             return results;
         }
 
-        [Tool("props.methods")]
+        [Tool("props.methods", ReadOnly = true)]
         public static object Methods(Args a, Ctx c) => Reflect.MethodNames(c.Open(a.NeedStr("handle")).GetType());
 
         /// <summary>Call ANY API method on an object: e.g. surface "RaiseSurface" [2.5].</summary>
@@ -98,10 +98,10 @@ namespace Civil3DMcp.Handlers
             return new { deleted = n };
         }
 
-        [Tool("doc.get_sysvar")]
+        [Tool("doc.get_sysvar", ReadOnly = true)]
         public static object GetVar(Args a, Ctx c) => new { name = a.NeedStr("name"), value = Conv.Plain(Application.GetSystemVariable(a.NeedStr("name"))) };
 
-        [Tool("doc.set_sysvar")]
+        [Tool("doc.set_sysvar", NoPreview = "changes a Civil 3D setting that a preview can't undo")]
         public static object SetVar(Args a, Ctx c)
         {
             var name = a.NeedStr("name");
@@ -119,24 +119,24 @@ namespace Civil3DMcp.Handlers
         /// exactly as if typed. Runs after this call returns. Use "-" versions of commands
         /// (e.g. "-LAYER") to avoid dialog boxes.
         /// </summary>
-        [Tool("doc.run_command")]
+        [Tool("doc.run_command", NoPreview = "sends text to the command line, which would run after the preview")]
         public static object Run(Args a, Ctx c)
         {
             var cmd = a.NeedStr("command");
             Security.CheckCommand(cmd);
             if (!cmd.EndsWith("\n") && !cmd.EndsWith(" ")) cmd += "\n";
-            c.Doc.SendStringToExecute(cmd, true, false, true);
+            c.Send(cmd, true, false, true);
             return new { queued = cmd.Trim() };
         }
 
-        [Tool("doc.zoom_extents")]
+        [Tool("doc.zoom_extents", NoPreview = "only changes the view")]
         public static object ZoomExtents(Args a, Ctx c)
         {
-            c.Doc.SendStringToExecute("_.ZOOM _E ", true, false, false);
+            c.Send("_.ZOOM _E ", true, false, false);
             return new { ok = true };
         }
 
-        [Tool("doc.save")]
+        [Tool("doc.save", NoPreview = "saves the drawing file")]
         public static object Save(Args a, Ctx c)
         {
             var path = a.Has("path") ? a.Str("path") : null;
@@ -144,11 +144,26 @@ namespace Civil3DMcp.Handlers
             if (path != null && (path.IndexOfAny(new[] { '"', '\r', '\n', '\t' }) >= 0 || path.Any(char.IsControl)
                                  || !path.EndsWith(".dwg", StringComparison.OrdinalIgnoreCase)))
                 throw new ArgumentException("path must be a .dwg file path without quotes or line breaks.");
-            c.Doc.SendStringToExecute(path != null ? $"_.SAVEAS  \"{path}\"\n" : "_.QSAVE\n", true, false, false);
+            c.Send(path != null ? $"_.SAVEAS  \"{path}\"\n" : "_.QSAVE\n", true, false, false);
             return new { queued = true };
         }
 
-        [Tool("measure.distance")]
+        [Tool("doc.undo", NoPreview = "undoes earlier steps")]
+        public static object Undo(Args a, Ctx c)
+        {
+            var (groups, tools, left) = UndoTracker.PlanUndo(c.Doc, a.Int("steps", 1));
+            UndoTracker.StartUndo(c.Doc, groups);
+            return new
+            {
+                queued = true,
+                undoing = tools,
+                civil3d_undo_steps = groups,
+                claude_steps_left = left,
+                note = "Civil 3D runs the undo right after this reply. Check the drawing (query_list or doc_summary)."
+            };
+        }
+
+        [Tool("measure.distance", ReadOnly = true)]
         public static object Distance(Args a, Ctx c)
         {
             var p1 = a.Pt("p1"); var p2 = a.Pt("p2");
@@ -162,7 +177,7 @@ namespace Civil3DMcp.Handlers
             };
         }
 
-        [Tool("measure.entity")]
+        [Tool("measure.entity", ReadOnly = true)]
         public static object MeasureEntity(Args a, Ctx c)
         {
             var e = c.Open(a.NeedStr("handle"));

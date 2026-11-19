@@ -1,10 +1,11 @@
 # Tool reference
 
-**181 tools** in `full` mode. In Claude the dots become underscores (`drafting.line` → `drafting_line`).
+**183 tools** in `full` mode. In Claude the dots become underscores (`drafting.line` → `drafting_line`).
 
 Points are `[x, y]` or `[x, y, z]`. Angles are degrees, except in `props_set`, `props_call` and C# code, which use radians.
 
 Mode column: **C** = loaded in `code` mode, **L** = loaded in `lean` mode, all tools load in `full` mode.
+`search` mode lists a few of them plus `tools_search`, `tools_read` and `tools_call`, which reach every tool below by name.
 
 ## Code execution & skills
 
@@ -29,6 +30,7 @@ Mode column: **C** = loaded in `code` mode, **L** = loaded in `lean` mode, all t
 | `doc_zoom_extents` |  | Zoom to extents. |  |
 | `doc_summary` | L | Short, size-capped picture of a drawing (good first call on large drawings): object counts by type and layer, extents, a spatial grid of where objects are, Civil 3D object counts, xrefs and layouts. | top, grid |
 | `doc_save` |  | Save the drawing (QSAVE) or Save As when path is given. | path |
+| `doc_undo` | L | Undo Claude's own last changes in the active drawing (one step = one tool call that changed it; a zoom after it is undone with it). Refuses when the drawing was changed another way since (by the user, a command-line command, a layout or system-variable change), so it never undoes the user's work; then the user can press Ctrl+Z in Civil 3D. | steps |
 | `query_list` | L | List objects in the current space with handle, type, layer and name. Filter by type (Line, Polyline, Circle, TinSurface, Alignment, CogoPoint, ...) and/or layer. | type, layer, limit |
 | `query_count_by_type` | L | Count objects in the current space by type. |  |
 | `props_get` | L | Read ALL properties of any object (entity, Civil object, style) by handle or Civil object name. Optional dotted path to read one value, e.g. 'ContourStyle.MajorContourInterval'. | **handle**, path |
@@ -38,6 +40,12 @@ Mode column: **C** = loaded in `code` mode, **L** = loaded in `lean` mode, all t
 | `entity_delete` | L | Delete objects. | **handles** |
 | `measure_distance` | L | Distance, 2D distance, angle and deltas between two points. | **p1**, **p2** |
 | `measure_entity` | L | Length, area, start/end and extents of an object. | **handle** |
+
+## Preview (dry run)
+
+| Tool | Mode | What it does | Inputs (**bold** = required) |
+|---|---|---|---|
+| `doc_preview` | L | Preview (dry run) a tool that changes the drawing, without changing anything: Civil 3D runs it, reports what it would add, change and delete, then rolls everything back. Use it before deleting or changing many objects, or when unsure what a tool or a C# script (code_execute) will do. Tools that save, plot, switch layouts or use the command line can't be previewed. | **name**, args |
 
 ## Drafting
 
