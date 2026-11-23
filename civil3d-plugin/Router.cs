@@ -82,6 +82,17 @@ namespace Civil3DMcp
             // on 2025). Reads (except C# code, which may draw and roll back) and tools that only queue a command
             // don't lock, so every Ctrl+Z undoes a real change and doc_undo can count exactly.
             bool locked = dryRun || !(UndoTracker.NoTransaction.Contains(tool) || (entry.ro && tool != "code.query"));
+            if (locked)
+            {
+                // Civil 3D runs our jobs even while the user is in the middle of a command (tested: a LINE waiting
+                // for its next point). Changing the drawing then would land inside that command and its undo step,
+                // so only reads go ahead.
+                string active = null;
+                try { active = doc.CommandInProgress; } catch { }
+                if (!string.IsNullOrEmpty(active))
+                    return Fail($"Civil 3D is busy: the {active} command is running. Nothing was changed. "
+                                + "Finish it or press Esc in Civil 3D, then try again.");
+            }
             bool committed = false, ok = false;
             UndoTracker.BeginRun(doc);
             try
@@ -98,9 +109,13 @@ namespace Civil3DMcp
                     result = Invoke(doc, entry, args, tool, dryRun, locked, out log, out committed);
                 }
                 ok = true;
-                if (log != null) return Ok(log.Report(result));
+                if (dryRun && log != null) return Ok(log.Report(result));
                 try { doc.Editor.UpdateScreen(); } catch { }
-                return Ok(result);
+                var reply = Ok(result);
+                // Verify after write: what the drawing itself shows changed, checked again after the commit.
+                if (log != null && committed)
+                    try { log.Verify(); reply["changes"] = log.Summary(); } catch { }
+                return reply;
             }
             catch (TargetInvocationException tie)
             {
@@ -127,10 +142,13 @@ namespace Civil3DMcp
             using (var tr = doc.Database.TransactionManager.StartTransaction())
             {
                 var ctx = new Ctx(doc, tr);
-                if (dryRun) log = new ChangeLog(doc.Database);
+                bool abort = dryRun || entry.ro || UndoTracker.NoTransaction.Contains(tool);
+                // A preview reports what would change; a real change is measured the same way and verified after
+                // the commit (see ChangeLog). Reads and command-only tools need neither.
+                if (dryRun || !abort) log = new ChangeLog(doc.Database, tr);
                 var result = entry.m.Invoke(null, new object[] { new Args(args), ctx });
                 log?.Describe(tr);
-                if (dryRun || entry.ro || UndoTracker.NoTransaction.Contains(tool)) tr.Abort();
+                if (abort) tr.Abort();
                 else { tr.Commit(); committed = true; }
                 return result;
             }

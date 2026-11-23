@@ -25,7 +25,23 @@ plugin and the new MCP server together; with only one of them updated everything
   plugin keeps a list of Claude's steps on top of Civil 3D's undo history for each drawing; when anything else
   changes the drawing (a command you run, Ctrl+Z, an edit in the Properties palette) or Claude uses the command
   line, a layout or a system variable, the list ends and `doc_undo` refuses and points you to Ctrl+Z. 183 tools.
+- **Busy check**: while a dialog box is open in Civil 3D, a tool call now answers within two seconds with
+  "Civil 3D is busy: the '...' dialog box is open" instead of waiting five minutes. While you are in the middle
+  of a command (for example a LINE waiting for its next point), tools that would change the drawing are refused
+  with the command's name; reading still works and your command keeps running.
+- **Verify after write**: after every tool that changes the drawing, the plugin measures in the drawing itself
+  what was added, changed and deleted (by type, with the new handles) and which settings changed (current layer,
+  text style, linetype, LTSCALE...), then checks again after saving that new objects exist and deleted ones are
+  gone. Claude gets one line, for example "Checked in the drawing after saving: added 1 Line (new handles D48)",
+  or "nothing changed", or a WARNING when Civil 3D didn't keep a change.
 - An unknown `CIVIL3D_MCP_MODE` now falls back to `full` with a warning in the MCP log.
+
+### For contributors
+
+- **CI**: GitHub Actions runs the Python tests (Python 3.10 and 3.13 on Windows) and `scripts/ci_checks.py`
+  on every push and pull request: scripts stay ASCII and parse in Windows PowerShell 5.1, the release DLL holds
+  no local folder paths, and `docs/tool-reference.md` matches the tools (`scripts/gen_tool_reference.py`).
+  The C# plugin isn't built there (it needs Autodesk's DLLs); every tool is still matched to its C# handler.
 
 ### Fixed
 
@@ -33,6 +49,10 @@ plugin and the new MCP server together; with only one of them updated everything
   time a program locks the drawing), so after Claude looked at the drawing you had to press Ctrl+Z several times
   to undo one change. Tools that only read or only send a command no longer lock the drawing, and the listing
   tools open it read-only; now each Ctrl+Z undoes one real change.
+- A tool call made while a dialog box was open stayed queued after Claude had been told it timed out, and ran
+  as soon as the dialog closed, so a retried change could happen twice. Calls that can't start are now taken
+  back and never run.
+- Tools could change the drawing in the middle of a command you were running, inside that command's undo step.
 - A tool call that arrived while a command Claude had sent was still waiting to run (UNDO, ZOOM, the command
   line) could run first. The next call now waits until that exact command has run (Civil 3D's own hidden
   commands don't end the wait).
@@ -45,7 +65,10 @@ worked again). 17 live preview checks passed: adding, deleting and moving lines,
 TIN surface were reported correctly and nothing was kept; save, command line and PDF plot were refused; a failing
 call said so. Undo, live: one and two steps, a zoom and a preview in between, reads leaving no undo step, refusing after a
 command-line command and after the user drew a polyline themselves (which was left alone): 12 checks, all
-passed, also right after starting Civil 3D. The 66 security checks from 1.1.0 still pass. Search mode was run live (find, draw, measure,
+passed, also right after starting Civil 3D. The 66 security checks from 1.1.0 still pass. Verify after write, live: 10 checks passed (a line, a new current layer, a property change, a call that changed
+nothing, a C# script, a read and a preview without a check line, deleting lines and a layer). Busy check, live: 9 checks passed (during a LINE command a read went through, a change and C# code were
+refused at once and the LINE kept running; with the Text Style dialog open calls answered in 1.5 s; the refused
+line never ran after the dialog closed). Search mode was run live (find, draw, measure,
 delete) as well as in the automated tests.
 
 ## 1.1.0 (2026-11-19)

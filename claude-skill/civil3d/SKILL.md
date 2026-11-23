@@ -53,11 +53,16 @@ The user watches Civil 3D next to this chat, so every change shows up in their d
 - After drawing something, call `doc_zoom_extents` so the user can see it.
 - "Undo that": `doc_undo` (with `steps` for more than one) takes back your own last changes. If it refuses, the
   user changed the drawing since; tell them to press Ctrl+Z in Civil 3D themselves. Then check the drawing.
+- Every change ends with "Checked in the drawing after saving: ...", measured in the drawing itself. Report from
+  that line; if it says "nothing changed" or has a WARNING, tell the user instead of claiming success.
 - Report briefly: what was created or changed, names or handles, and key numbers (lengths, areas, volumes).
 
 ## When a tool fails
 
-- **"did not answer in time"**: a dialog box is probably open in Civil 3D. Ask the user to close it.
+- **"Civil 3D is busy"**: a dialog box is open, or the user is in the middle of a command (the message names it).
+  Nothing was run or changed. Ask the user to close the dialog or finish the command (or press Esc), then try
+  once more. Reads still work during a command.
+- **"did not answer in time"**: a long command may be running in Civil 3D. Ask the user to check Civil 3D.
 - **"Missing or wrong token"**: the plugin and the MCP server don't match (usually right after an update). Ask the
   user to close Civil 3D, run `install.bat` again, then restart Claude and open Civil 3D.
 - **"Drawing lock"** (or a note that the active drawing changed): the user switched drawings since you last called

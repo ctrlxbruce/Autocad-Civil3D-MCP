@@ -1,5 +1,6 @@
 # Civil 3D MCP: control Autodesk Civil 3D with AI
 
+[![CI](https://github.com/ctrlxbruce/Autocad-Civil3D-MCP/actions/workflows/ci.yml/badge.svg)](https://github.com/ctrlxbruce/Autocad-Civil3D-MCP/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Version 1.1.0](https://img.shields.io/badge/version-1.1.0-blue)](CHANGELOG.md)
 ![Civil 3D 2025 | 2026](https://img.shields.io/badge/Civil%203D-2025%20%7C%202026-0696D7)
@@ -226,7 +227,8 @@ in Claude Desktop.
 | Claude says **"Civil 3D is not reachable"** | Open Civil 3D **and a drawing**. Type `MCPSTATUS` in Civil 3D. If it says STOPPED, type `MCPSTART`. |
 | `MCPSTATUS` is an unknown command | The plugin isn't loaded. Close Civil 3D and run `install.bat` again. To load it once by hand, type `NETLOAD` and pick `%APPDATA%\Autodesk\ApplicationPlugins\Civil3DMcp.bundle\Contents\Civil3DMcp.dll`. |
 | The civil3d tools don't appear in Claude | Run `install.bat` again and read its summary. Then fully quit and reopen Claude Desktop, or start a new Claude Code session (`claude mcp list` should show `civil3d`). |
-| **"Civil 3D did not answer in time"** | A dialog box is probably open in Civil 3D. Close it and try again. |
+| **"Civil 3D is busy"** | A dialog box is open in Civil 3D, or you are in the middle of a command (the message names it). Nothing was run. Close the dialog or finish the command (or press Esc), then ask Claude to try again. |
+| **"Civil 3D did not answer in time"** | A long command is probably still running in Civil 3D. Wait for it, then try again. |
 | **"Missing or wrong token"** | Happens right after updating from 1.0. Close Civil 3D, run `install.bat` again, then fully quit and reopen Claude Desktop (or start a new Claude Code session) and open Civil 3D. |
 | **"Drawing lock"** | You switched to another drawing after Claude last looked. Tell Claude which drawing to work on; it calls `doc_info` and carries on. |
 | **"Blocked for safety"** | The command or code does something the plugin doesn't allow (see [Safety and privacy](#safety-and-privacy)). Do that step yourself in Civil 3D. |
@@ -257,6 +259,12 @@ in Claude Desktop.
 - **Drawing lock.** Claude only changes the drawing it last looked at. If you switch to another drawing tab
   in the middle of a task, tools that would change something are refused ("Drawing lock"), nothing is changed, and
   Claude asks you which drawing to work on. Reading still works, with a note that the drawing changed.
+- **Checks its own work.** After every change Civil 3D measures what really happened (objects added, changed or
+  deleted, and settings such as the current layer) and checks again after saving. Claude reports from that, and
+  says so when nothing changed or Civil 3D didn't keep a change.
+- **Never in your way.** While a dialog box is open, Claude gets "Civil 3D is busy" within two seconds and its
+  request is dropped, so it can't run later by surprise. While you are in the middle of a command, Claude can
+  read the drawing but not change it.
 - **Undo that never touches your work.** Each change Claude makes is exactly one Ctrl+Z in Civil 3D (reading
   the drawing leaves nothing in the undo history). Ask Claude to "undo that" and `doc_undo` takes back only
   Claude's own last changes. If you changed the drawing yourself since (any command, Ctrl+Z, the Properties
@@ -482,8 +490,8 @@ DatabaseServices, Geometry, EditorInput, Colors), `Autodesk.Civil`, `Autodesk.Ci
 civil3d-mcp/
 ├── install.bat · uninstall.bat      one-step installer / uninstaller (Windows)
 ├── README.md · CHANGELOG.md · CLAUDE.md · LICENSE · build_and_install.bat · claude_desktop_config.example.json
-├── .github/ISSUE_TEMPLATE/          bug report and feature request forms
-├── scripts/                         install.ps1 · uninstall.ps1 · civil3d-common.ps1
+├── .github/                         CI workflow, bug report and feature request forms
+├── scripts/                         install.ps1 · uninstall.ps1 · civil3d-common.ps1 · ci_checks.py · gen_tool_reference.py
 ├── claude-skill/civil3d/SKILL.md    the /civil3d skill for Claude Code
 ├── docs/tool-reference.md
 ├── skills/                          C# templates for code execution
@@ -508,7 +516,9 @@ civil3d-mcp/
 
 1. C#: `[Tool("group.my_tool")] public static object MyTool(Args a, Ctx c) { ... }`
 2. Python: add `"group.my_tool": ("What it does", {"param": ("string", "description", True)})` in `mcp-server/tools/`.
-3. Run `python mcp-server/tests/test_server.py`.
+3. Run `python scripts/gen_tool_reference.py` (updates `docs/tool-reference.md`), then
+   `python mcp-server/tests/test_server.py` and `python scripts/ci_checks.py`. GitHub runs the same two on every
+   push and pull request.
 
 </details>
 

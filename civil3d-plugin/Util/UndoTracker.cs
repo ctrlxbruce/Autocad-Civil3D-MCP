@@ -141,9 +141,12 @@ namespace Civil3DMcp
                 return;
             }
             st.ForeignCommands++;
-            End(st, name == "U" || name == "UNDO" || name == "REDO" || name == "MREDO"
-                ? "an undo or redo in Civil 3D" : $"the {name} command");
+            End(st, Describe(name));
         }
+
+        static string Describe(string name) =>
+            name == "U" || name == "UNDO" || name == "REDO" || name == "MREDO"
+                ? "an undo or redo in Civil 3D" : $"the {name} command";
 
         static void OnCommandEnd(State st, string cmd, bool ok)
         {
@@ -163,7 +166,12 @@ namespace Civil3DMcp
                 }
                 return;
             }
-            if (st.ForeignCommands > 0) st.ForeignCommands--;
+            if (st.ForeignCommands > 0)
+            {
+                st.ForeignCommands--;
+                // Its undo step is recorded when it ends, so it lands on top of anything we did meanwhile.
+                End(st, Describe(Bare(cmd)));
+            }
         }
 
         static void OnDbChange(State st, DBObject o)

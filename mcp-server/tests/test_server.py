@@ -68,6 +68,8 @@ def fake_plugin(port, seen, state=None):
                     if want and want["id"] != doc["id"]:
                         reply = {"id": req["id"], "ok": False, "error": "Drawing lock: nothing was changed."}
                     reply["doc"] = dict(doc)
+                    if "changes" in state and req["tool"] == "drafting.line" and reply["ok"]:
+                        reply["changes"] = state["changes"]
                 conn.sendall((json.dumps(reply) + "\n").encode())
 
     threading.Thread(target=loop, daemon=True).start()
@@ -254,9 +256,14 @@ def test_drawing_lock_end_to_end():
 
                 t = await text("doc_info")                                   # Claude looks again: lock moves
                 assert "different drawing from 'Site.dwg'" in t
+                state["changes"] = {"added": {"Line": 1}, "new_handles": ["2A3"]}
                 t = await text("drafting_line", line)
                 assert '"2A3"' in t and seen[-1]["expect_doc"]["id"] == "bbb"
                 assert "dry_run" not in seen[-1]                             # normal calls are real
+                assert "Checked in the drawing after saving: added 1 Line (new handles 2A3)" in t
+                state["changes"] = {}
+                assert "nothing changed" in await text("drafting_line", line)
+                state.pop("changes")
 
                 # Preview: the target tool goes to the plugin with dry_run, under the same drawing lock.
                 n = len(seen)
@@ -276,6 +283,19 @@ def test_drawing_lock_end_to_end():
                 assert [r["tool"] for r in seen[n:]] == ["system.ping"]      # the delete itself was never sent
 
     anyio.run(run)
+
+
+def test_describe_changes():
+    import server
+    assert server.describe_changes(None) is None                        # reads, previews, older plugins
+    t = server.describe_changes({"added": {"Line": 2, "Circle": 1}, "new_handles": ["A1", "A2", "A3"],
+                                 "settings": {"current layer": "0 -> C-ROAD"}})
+    assert t == ("Checked in the drawing after saving: added 2 Line, 1 Circle (new handles A1, A2, A3); "
+                 "settings current layer: 0 -> C-ROAD")
+    assert "deleted 1 Line" in server.describe_changes({"deleted": {"Line": 1}})
+    assert "nothing changed. If a change was expected" in server.describe_changes({})
+    w = server.describe_changes({"added": {"Line": 1}, "problems": ["1 of the new objects are not in the drawing."]})
+    assert "WARNING: 1 of the new objects" in w and "Tell the user" in w
 
 
 def test_drawing_lock_unit():
@@ -303,5 +323,6 @@ if __name__ == "__main__":
     n = test_end_to_end()
     test_search_mode_end_to_end()
     test_drawing_lock_unit()
+    test_describe_changes()
     test_drawing_lock_end_to_end()
     print(f"OK: {n} tools, catalogue matches plugin, end-to-end call works, search mode and drawing lock work.")

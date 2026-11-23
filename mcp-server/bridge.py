@@ -76,4 +76,6 @@ def call_with_doc(tool: str, args: dict | None = None, expect_doc: dict | None =
     doc = reply.get("doc") if isinstance(reply.get("doc"), dict) else None
     if not reply.get("ok"):
         raise Civil3DError(reply.get("error", "Unknown error"), doc)
+    if isinstance(reply.get("changes"), dict):
+        doc = {**(doc or {}), "changes": reply["changes"]}   # what the drawing shows changed (verify after write)
     return reply.get("result"), doc

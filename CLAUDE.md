@@ -41,7 +41,11 @@ Follow `claude-skill/civil3d/SKILL.md`: ping first, summarize the drawing, then 
 ## Working on this repo
 
 - Every tool needs a C# handler (`[Tool("group.name")]` in `civil3d-plugin/Handlers/`) and a Python catalogue
-  entry (`mcp-server/tools/`). Check both sides with `python mcp-server/tests/test_server.py`.
+  entry (`mcp-server/tools/`). Check both sides with `python mcp-server/tests/test_server.py`. Read-only tools
+  get `ReadOnly = true` in C# and go in `READ_ONLY` in `mcp-server/tools/__init__.py` (a test checks they match).
+- After changing tools, run `python scripts/gen_tool_reference.py`, then `python scripts/ci_checks.py`
+  (ASCII-only scripts, PowerShell 5.1 parse, no local paths in the release DLL, tool reference up to date).
+  CI (`.github/workflows/ci.yml`) runs the tests and these checks on every push.
 - After changing C# code, rebuild the prebuilt DLL in `release/` so users get the change.
 - Keep `.ps1` and `.bat` files ASCII-only. `.gitattributes` makes `.bat` / `.cmd` / `.ps1` files CRLF.
 - `scripts/install.ps1` and `scripts/uninstall.ps1` must work in Windows PowerShell 5.1 (no `??`, `?:` or `&&`).

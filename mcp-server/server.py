@@ -91,7 +91,30 @@ def plugin_call(tool: str, args: dict, dry_run: bool = False) -> tuple[object, s
     except bridge.Civil3DError as e:
         LOCK.update(tool, e.doc, ok=False)
         raise
-    return result, LOCK.update(tool, doc, ok=True)
+    notes = [n for n in (describe_changes((doc or {}).get("changes")), LOCK.update(tool, doc, ok=True)) if n]
+    return result, "\n\n".join(notes) or None
+
+
+def _types(counts: dict) -> str:
+    return ", ".join(f"{n} {t}" for t, n in counts.items())
+
+
+def describe_changes(ch: dict | None) -> str | None:
+    """One line on what the plugin measured in the drawing after a change was saved (verify after write)."""
+    if not isinstance(ch, dict):
+        return None                   # a read, a preview, a command-only tool, or an older plugin
+    parts = [f"{label} {_types(ch[key])}" for key, label in (("added", "added"), ("changed", "changed"),
+                                                             ("deleted", "deleted")) if ch.get(key)]
+    if ch.get("new_handles"):
+        parts[0] += f" (new handles {', '.join(ch['new_handles'])}{'...' if len(ch['new_handles']) >= 5 else ''})"
+    if ch.get("settings"):
+        parts.append("settings " + "; ".join(f"{k}: {v}" for k, v in ch["settings"].items()))
+    text = "Checked in the drawing after saving: " + ("; ".join(parts) if parts else "nothing changed")
+    if ch.get("problems"):
+        text += ". WARNING: " + " ".join(ch["problems"]) + " Tell the user."
+    elif not parts:
+        text += ". If a change was expected, tell the user and check the inputs."
+    return text
 
 
 def _shrink(value, keep: int):
@@ -127,6 +150,10 @@ INSTRUCTIONS = """You control Autodesk Civil 3D through these tools.
 - When the user says "use Civil 3D" (or starts asking for drawing work), call system_ping, then doc_info,
   and give a 2-3 line summary of the open drawing. If ping fails, ask them to open Civil 3D and a drawing.
 - On a large or unfamiliar drawing, call doc_summary before listing objects.
+- "Civil 3D is busy" means a dialog box is open or the user is in a command (named in the message); nothing was
+  run. Ask the user to close or finish it, then try once more.
+- After a change, the reply ends with "Checked in the drawing after saving: ..." (measured in the drawing). Report
+  from it; if it says nothing changed or has a WARNING, tell the user.
 - To take back your own change, use doc_undo; if it refuses, the user changed the drawing since: ask them to
   press Ctrl+Z in Civil 3D.
 - Before deleting or changing many objects (or running code_execute on existing objects), preview it with
