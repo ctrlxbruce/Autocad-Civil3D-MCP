@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## 1.2.0 (2026-11-23)
+
+Working side by side, safely: Claude only changes the drawing it looked at, can preview and undo its own changes,
+waits for your dialogs and commands, and checks every change in the drawing itself. Plus a search mode that cuts
+the tool list to about 1,100 tokens, and automated tests on GitHub.
 
 **After updating:** close Civil 3D, run `install.bat` again, then restart Claude. The drawing lock needs the new
 plugin and the new MCP server together; with only one of them updated everything still works, without the lock.

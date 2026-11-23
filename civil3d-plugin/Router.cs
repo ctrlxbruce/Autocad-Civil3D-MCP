@@ -62,7 +62,7 @@ namespace Civil3DMcp
             if (tool == "system.ping")
                 // features: what this plugin understands, so a newer MCP server never relies on what it can't do
                 // (an older plugin would ignore dry_run and run the tool for real).
-                return Ok(new { pong = true, tools = Count, version = "1.1.0", features = new[] { "drawing_lock", "preview" } });
+                return Ok(new { pong = true, tools = Count, version = "1.2.0", features = new[] { "drawing_lock", "preview" } });
             if (tool == "system.list_tools")
                 return Ok(Tools.Keys.OrderBy(k => k).ToList());
 

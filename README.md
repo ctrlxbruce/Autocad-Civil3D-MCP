@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/ctrlxbruce/Autocad-Civil3D-MCP/actions/workflows/ci.yml/badge.svg)](https://github.com/ctrlxbruce/Autocad-Civil3D-MCP/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version 1.1.0](https://img.shields.io/badge/version-1.1.0-blue)](CHANGELOG.md)
+[![Version 1.2.0](https://img.shields.io/badge/version-1.2.0-blue)](CHANGELOG.md)
 ![Civil 3D 2025 | 2026](https://img.shields.io/badge/Civil%203D-2025%20%7C%202026-0696D7)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6)
 ![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB)
@@ -378,6 +378,10 @@ PVC pipe at 1 % gives 32.8 L/s full, as by hand), Rational runoff, time of conce
 and flow path, stock subassemblies hooked into a corridor, earthwork, pipe lengths and a BOQ with CSV, stopping
 sight distance, K values and curve radii (AASHTO and IRC), a decimal-comma point file, and the drawing summary.
 Not yet tested: adding pressure parts (see above), xrefs and DWG import, and Civil 3D 2026.
+
+Version 1.2.0 added search mode, the drawing lock, preview, undo, the busy check and verify after write, each
+tested live in Civil 3D 2025 (drawing lock 12, preview 17, undo 12, busy check 9, verify after write 10 checks,
+all passed; the 66 security checks from 1.1.0 still pass), and GitHub runs the automated tests on every push.
 
 ---
 
